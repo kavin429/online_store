@@ -1,0 +1,25 @@
+{
+  "name": "@online-store/auth",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./types": "./src/types.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@auth/prisma-adapter": "2.11.2",
+    "@online-store/db": "workspace:*",
+    "bcryptjs": "3.0.3",
+    "next-auth": "4.24.14"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "2.4.6",
+    "next": "14.2.35",
+    "typescript": "5.9.3"
+  }
+}

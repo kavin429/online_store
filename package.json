@@ -1,0 +1,25 @@
+{
+  "name": "online-store",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:admin": "pnpm --filter @online-store/admin dev",
+    "dev:store": "pnpm --filter @online-store/store dev",
+    "dev:vendor": "pnpm --filter @online-store/vendor dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "prisma:generate": "turbo run generate --filter=@online-store/db",
+    "prisma:push": "pnpm --filter @online-store/db run push",
+    "prisma:studio": "pnpm --filter @online-store/db run studio"
+  },
+  "devDependencies": {
+    "turbo": "^1.10.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}
+
