@@ -1,3 +1,3 @@
-import { prisma } from "@online-store/db";
+import { prisma, withReconnect } from "@online-store/db";
 
-export { prisma };
+export { prisma, withReconnect };

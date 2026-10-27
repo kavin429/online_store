@@ -1,7 +1,6 @@
 {
   "extends": "@online-store/config/tsconfig/nextjs.json",
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
       "@online-store/ui/*": ["../../packages/ui/src/*"],

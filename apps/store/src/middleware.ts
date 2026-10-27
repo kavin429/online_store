@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { ROLES } from "@online-store/auth";
+import { ROLES } from "@online-store/auth/types";
 
 /**
  * The storefront only guards the signed-in customer area.
