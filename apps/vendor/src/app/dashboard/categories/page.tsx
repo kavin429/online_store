@@ -1,6 +1,6 @@
 import CategoryMain from "@/components/category/category";
 import { prisma } from "@/lib/prisma";
-import { Category } from "@prisma/client";
+import type { Category } from "@online-store/db";
 import { cookies } from "next/headers";
 
 export default async function Page() {

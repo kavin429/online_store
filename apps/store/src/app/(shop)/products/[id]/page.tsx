@@ -7,7 +7,7 @@ import { Card, CardContent } from "@online-store/ui/card";
 import { ShoppingCart, Heart, CircleCheckIcon, Minus, Plus } from "lucide-react";
 import { useCart } from "@/context/addToCard";
 import { useWishlist } from "@/context/favorite";
-import ProductCard from "@/components/Home/product";
+import ProductCard from "@/components/Home/product-card";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import AuthRequiredDialog from "@/components/misc/authRequiredDialog";
@@ -33,6 +33,7 @@ interface Product {
   description?: string;
   sellingPrice: number;
   costPrice: number;
+  featured: boolean;
   images: { id: number; url: string }[];
   category: { id: number; name: string };
   variantTypes?: VariantType[];
@@ -417,7 +418,11 @@ export default function ProductDetailsPage() {
       {relatedProducts.length > 0 && (
         <div className="mt-16">
           <h2 className="text-xl font-bold mb-6">Related Products</h2>
-          <ProductCard />
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {relatedProducts.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
         </div>
       )}
 

@@ -12,6 +12,7 @@ import { Button } from "@online-store/ui/button";
 import { Input } from "@online-store/ui/input";
 import { Label } from "@online-store/ui/label";
 import { Textarea } from "@online-store/ui/textarea";
+import { compressImageFile } from "@online-store/ui/lib/image";
 import type { Offer, OfferStatus } from "@/lib/types";
 
 export type ProductOption = { id: number; name: string };
@@ -112,6 +113,7 @@ export default function OfferFormDialog({
   const [form, setForm] = useState<FormState>(emptyForm);
   const [localError, setLocalError] = useState<string | null>(null);
   const [productSearch, setProductSearch] = useState("");
+  const [processingImages, setProcessingImages] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -132,48 +134,44 @@ export default function OfferFormDialog({
         : [...p.productIds, id],
     }));
 
-  const handleImage = (file?: File) => {
+  const handleImage = async (file?: File) => {
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setLocalError("Image must be under 2 MB.");
-      return;
+    setLocalError(null);
+    setProcessingImages(true);
+    try {
+      update("image", await compressImageFile(file));
+    } catch (err: any) {
+      setLocalError(err?.message || "Could not read the selected image.");
+    } finally {
+      setProcessingImages(false);
     }
-    const reader = new FileReader();
-    reader.onload = () => update("image", String(reader.result));
-    reader.readAsDataURL(file);
   };
 
-  const handleGallery = (files: FileList | null) => {
+  const handleGallery = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    const list = Array.from(files);
-    if (list.some((f) => f.size > 2 * 1024 * 1024)) {
-      setLocalError("Each gallery image must be under 2 MB.");
-      return;
-    }
     const room = MAX_GALLERY - form.images.length;
     if (room <= 0) {
       setLocalError(`You can add up to ${MAX_GALLERY} gallery images.`);
       return;
     }
     setLocalError(null);
-    Promise.all(
-      list
-        .slice(0, room)
-        .map(
-          (file) =>
-            new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(String(reader.result));
-              reader.onerror = () => reject(new Error("read failed"));
-              reader.readAsDataURL(file);
-            }),
-        ),
-    )
-      .then((read) => setForm((p) => ({ ...p, images: [...p.images, ...read] })))
-      .catch(() => setLocalError("Could not read the selected images."));
+    setProcessingImages(true);
+    try {
+      const read = await Promise.all(
+        Array.from(files)
+          .slice(0, room)
+          .map((file) => compressImageFile(file)),
+      );
+      setForm((p) => ({ ...p, images: [...p.images, ...read] }));
+    } catch (err: any) {
+      setLocalError(err?.message || "Could not read the selected images.");
+    } finally {
+      setProcessingImages(false);
+    }
   };
 
   const handleSubmit = async () => {
+    if (processingImages) return;
     if (!form.title.trim()) {
       setLocalError("Title is required.");
       return;
@@ -262,6 +260,7 @@ export default function OfferFormDialog({
             )}
             <p className="text-xs text-muted-foreground">
               Extra images shown as a gallery on the offer page. The banner image is used as the cover.
+              Images are resized and compressed automatically before upload.
             </p>
           </div>
 
@@ -359,9 +358,17 @@ export default function OfferFormDialog({
         </div>
 
         <DialogFooter className="flex justify-end space-x-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={saving}>
-            {saving ? "Saving..." : mode === "edit" ? "Save Changes" : "Create Offer"}
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving || processingImages}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={saving || processingImages}>
+            {processingImages
+              ? "Processing images..."
+              : saving
+                ? "Saving..."
+                : mode === "edit"
+                  ? "Save Changes"
+                  : "Create Offer"}
           </Button>
         </DialogFooter>
       </DialogContent>

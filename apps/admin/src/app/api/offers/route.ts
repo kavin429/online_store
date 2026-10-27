@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, withReconnect } from "@/lib/prisma";
 import { serializeOffer } from "@/lib/offers";
+import { OFFER_REQUEST_MAX_BYTES, validateOfferImages } from "@online-store/ui/lib/image";
 
 import { isAdmin } from "@/lib/auth";
 const offerInclude = {
@@ -20,10 +21,10 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const offers = await prisma.offer.findMany({
+  const offers = await withReconnect(() => prisma.offer.findMany({
     orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
     include: offerInclude,
-  });
+  }));
   return NextResponse.json(offers.map(serializeOffer));
 }
 
@@ -33,15 +34,27 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    if (Number(req.headers.get("content-length") ?? 0) > OFFER_REQUEST_MAX_BYTES) {
+      return NextResponse.json(
+        { error: "The offer is too large. Please use smaller images." },
+        { status: 413 },
+      );
+    }
+
     const b = await req.json();
 
     if (!b.title || !String(b.title).trim()) {
       return NextResponse.json({ error: "title is required" }, { status: 400 });
     }
 
+    const imagesCheck = validateOfferImages(b.image, b.images);
+    if (!imagesCheck.ok) {
+      return NextResponse.json({ error: imagesCheck.error }, { status: 413 });
+    }
+
     const productIds: number[] = Array.isArray(b.productIds) ? b.productIds.map(Number) : [];
 
-    const offer = await prisma.offer.create({
+    const offer = await withReconnect(() => prisma.offer.create({
       data: {
         title: String(b.title).trim(),
         subtitle: b.subtitle || null,
@@ -62,11 +75,17 @@ export async function POST(req: NextRequest) {
         products: { create: productIds.map((productId) => ({ productId })) },
       },
       include: offerInclude,
-    });
+    }));
 
     return NextResponse.json(serializeOffer(offer), { status: 201 });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Create offer error:", err);
+    if (err?.code === "P1017" || err?.code === "P1001" || err?.code === "P1002") {
+      return NextResponse.json(
+        { error: "The database connection was interrupted. Please try again." },
+        { status: 503, headers: { "Retry-After": "3" } },
+      );
+    }
     return NextResponse.json({ error: "Failed to create offer" }, { status: 500 });
   }
 }

@@ -21,6 +21,14 @@ export async function GET(req: NextRequest) {
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - 7);
 
+    // OrderItem has no product relation in the shared schema, so resolve the
+    // vendor's product ids first and filter order items by those.
+    const vendorProducts = await prisma.product.findMany({
+      where: { vendorId },
+      select: { id: true },
+    });
+    const itemFilter = { productId: { in: vendorProducts.map((p) => p.id) } };
+
     const [
       totalProducts,
       activeProducts,
@@ -42,20 +50,20 @@ export async function GET(req: NextRequest) {
       prisma.order.count({
         where: {
           status: "PENDING",
-          items: { some: { product: { vendorId } } },
+          items: { some: itemFilter },
         },
       }),
       prisma.order.count({
         where: {
           createdAt: { gte: todayStart },
-          items: { some: { product: { vendorId } } },
+          items: { some: itemFilter },
         },
       }),
       prisma.order.aggregate({
         where: {
           status: "DELIVERED",
           createdAt: { gte: todayStart },
-          items: { some: { product: { vendorId } } },
+          items: { some: itemFilter },
         },
         _sum: { total: true },
       }),
@@ -63,12 +71,12 @@ export async function GET(req: NextRequest) {
         where: {
           status: "DELIVERED",
           createdAt: { gte: weekStart },
-          items: { some: { product: { vendorId } } },
+          items: { some: itemFilter },
         },
         _sum: { total: true },
       }),
       prisma.order.findMany({
-        where: { items: { some: { product: { vendorId } } } },
+        where: { items: { some: itemFilter } },
         include: {
           user: { select: { name: true } },
           items: true,
@@ -86,7 +94,7 @@ export async function GET(req: NextRequest) {
         by: ["status"],
         where: {
           createdAt: { gte: weekStart },
-          items: { some: { product: { vendorId } } },
+          items: { some: itemFilter },
         },
         _count: true,
       }),
@@ -103,19 +111,19 @@ export async function GET(req: NextRequest) {
             where: {
               status: "DELIVERED",
               createdAt: { gte: dayStart, lte: dayEnd },
-              items: { some: { product: { vendorId } } },
+              items: { some: itemFilter },
             },
             _sum: { total: true },
           });
 
           const dayName = dayStart.toLocaleDateString("en-US", { weekday: "short" });
-          days.push({ date: dayName, revenue: agg._sum.total || 0 });
+          days.push({ date: dayName, revenue: agg._sum?.total ?? 0 });
         }
         return days;
       })(),
       prisma.orderItem.groupBy({
         by: ["productId"],
-        where: { product: { vendorId } },
+        where: { productId: { in: vendorProducts.map((p) => p.id) } },
         _sum: { quantity: true },
         _count: true,
         orderBy: { _sum: { quantity: "desc" } },
@@ -140,8 +148,8 @@ export async function GET(req: NextRequest) {
         lowStockProducts,
         pendingOrders,
         todayOrders,
-        todayRevenue: todayRevenue._sum.total || 0,
-        weekRevenue: weekRevenue._sum.total || 0,
+        todayRevenue: todayRevenue._sum?.total ?? 0,
+        weekRevenue: weekRevenue._sum?.total ?? 0,
         unreadNotifications,
       },
       recentOrders: recentOrders.map((o) => ({
@@ -167,7 +175,7 @@ export async function GET(req: NextRequest) {
       weeklyRevenueTrend: weeklyRevenueTrend,
       bestSellingProducts: bestSellingProducts.map((p) => ({
         name: nameMap.get(p.productId) || "Unknown",
-        totalSold: p._sum.quantity || 0,
+        totalSold: p._sum?.quantity ?? 0,
         orderCount: p._count,
       })),
     });

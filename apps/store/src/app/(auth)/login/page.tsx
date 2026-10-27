@@ -1,6 +1,7 @@
 // app/login/page.tsx
 "use client";
 
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { User, Lock, ShoppingBag, Truck, ShieldCheck } from "lucide-react";
@@ -9,9 +10,8 @@ import { toast } from "sonner";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@online-store/ui/button";
-import { useState } from "react";
 
-export default function LoginPage() {
+function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -238,5 +238,13 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   );
 }

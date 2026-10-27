@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start --port 3002",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed": "pnpm --filter @online-store/db run seed"
   },
   "dependencies": {
     "@online-store/db": "workspace:*",

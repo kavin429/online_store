@@ -1,5 +1,0 @@
--- AlterTable
-ALTER TABLE `vendor` ADD COLUMN `cancelReason` VARCHAR(191) NULL,
-    ADD COLUMN `cancelledAt` DATETIME(3) NULL,
-    ADD COLUMN `isProfileComplete` BOOLEAN NOT NULL DEFAULT false,
-    MODIFY `status` ENUM('ACTIVE', 'BLOCKED', 'PENDING', 'CANCELLED') NOT NULL DEFAULT 'PENDING';

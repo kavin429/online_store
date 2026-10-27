@@ -63,8 +63,12 @@ export async function sendSms({ to, body }: SmsPayload) {
   try {
     await smsClient.messages.create({ from, to: recipient, body });
     return true;
-  } catch (error) {
-    console.error(`SMS failed for ${to}:`, error);
+  } catch (error: any) {
+    if (error?.code === 572002) {
+      console.warn(`SMS skipped for ${to}: unverified recipient on trial account.`);
+    } else {
+      console.error(`SMS failed for ${to}:`, error);
+    }
     return false;
   }
 }

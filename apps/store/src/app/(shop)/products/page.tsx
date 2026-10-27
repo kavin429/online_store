@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import ProductCard from "@/components/Home/product";
+import ProductCard from "@/components/Home/product-card";
 
 interface Product {
   id: number;
   name: string;
+  description?: string;
   sellingPrice: number;
   costPrice: number;
+  featured: boolean;
   images: { id: number; url: string }[];
-  category?: { id: number; name: string };
+  category: { id: number; name: string };
+  rating?: number;
+  store?: string;
+  isNew?: boolean;
 }
 
-export default function ProductsPage() {
+function ProductsContent() {
   const searchParams = useSearchParams();
   const categoryId = searchParams.get("categoryId") || searchParams.get("category");
 
@@ -27,7 +32,16 @@ export default function ProductsPage() {
         const query = categoryId ? `?categoryId=${categoryId}` : "";
         const res = await fetch(`/api/products${query}`);
         const data = await res.json();
-        setProducts(data.data || []);
+        setProducts(
+          (data.data || []).map((p: Product) => ({
+            ...p,
+            rating: Number((Math.random() * 2 + 3).toFixed(1)),
+            store: ["Nike Store", "Fashion Hub", "Sneaker World", "Urban Feet", "Shoe Palace"][
+              Math.floor(Math.random() * 5)
+            ],
+            isNew: Math.random() > 0.5,
+          }))
+        );
       } catch (error) {
         console.error(error);
         setProducts([]);
@@ -68,5 +82,13 @@ export default function ProductsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense>
+      <ProductsContent />
+    </Suspense>
   );
 }

@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./lib/utils": "./src/lib/utils.ts",
+    "./lib/image": "./src/lib/image.ts",
     "./utils": "./src/lib/utils.ts",
     "./*": "./src/components/*.tsx"
   },

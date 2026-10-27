@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma, withReconnect } from "@/lib/prisma";
 import { serializeOffer } from "@/lib/offers";
+import { OFFER_REQUEST_MAX_BYTES, validateOfferImages } from "@online-store/ui/lib/image";
 
 import { isAdmin } from "@/lib/auth";
 const offerInclude = {
@@ -31,7 +32,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   const id = Number(params.id);
   try {
+    if (Number(req.headers.get("content-length") ?? 0) > OFFER_REQUEST_MAX_BYTES) {
+      return NextResponse.json(
+        { error: "The offer is too large. Please use smaller images." },
+        { status: 413 },
+      );
+    }
+
     const b = await req.json();
+
+    const imagesCheck = validateOfferImages(b.image, b.images);
+    if (!imagesCheck.ok) {
+      return NextResponse.json({ error: imagesCheck.error }, { status: 413 });
+    }
 
     const images =
       b.images === undefined
@@ -40,7 +53,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           ? b.images.filter((x: unknown): x is string => typeof x === "string" && x.length > 0)
           : [];
 
-    const offer = await prisma.$transaction(async (tx) => {
+    const offer = await withReconnect(() => prisma.$transaction(async (tx) => {
       // Replace the product list wholesale when one is sent.
       if (Array.isArray(b.productIds)) {
         await tx.offerProduct.deleteMany({ where: { offerId: id } });
@@ -72,7 +85,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         },
         include: offerInclude,
       });
-    });
+    }));
 
     return NextResponse.json(serializeOffer(offer));
   } catch (err: any) {
@@ -80,6 +93,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       return NextResponse.json({ error: "Offer not found" }, { status: 404 });
     }
     console.error("Update offer error:", err);
+    if (err?.code === "P1017" || err?.code === "P1001" || err?.code === "P1002") {
+      return NextResponse.json(
+        { error: "The database connection was interrupted. Please try again." },
+        { status: 503, headers: { "Retry-After": "3" } },
+      );
+    }
     return NextResponse.json({ error: "Failed to update offer" }, { status: 500 });
   }
 }
