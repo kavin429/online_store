@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma, withReconnect } from "@/lib/prisma";
 import { serializeOffer } from "@/lib/offers";
+import { resolveBasisFields } from "@/lib/offer-basis";
 import { OFFER_REQUEST_MAX_BYTES, validateOfferImages } from "@online-store/ui/lib/image";
 
 import { isAdmin } from "@/lib/auth";
 const offerInclude = {
   promo: { select: { id: true, code: true } },
   vendor: { select: { id: true, name: true } },
+  subCategory: { select: { id: true, name: true } },
   products: { include: { product: { select: { id: true, name: true } } } },
 } as const;
 
@@ -53,6 +55,29 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           ? b.images.filter((x: unknown): x is string => typeof x === "string" && x.length > 0)
           : [];
 
+    // Basis / sub category: only touched when the request sends one of them
+    // (so approve/reject PATCHes that send just approvalStatus are unaffected).
+    let basisData: { basis: string | null; subCategoryId: number | null } | undefined;
+    if (b.basis !== undefined || b.subCategoryId !== undefined) {
+      const existing = await prisma.offer.findUnique({
+        where: { id },
+        select: { basis: true, subCategoryId: true },
+      });
+      if (!existing) {
+        return NextResponse.json({ error: "Offer not found" }, { status: 404 });
+      }
+
+      const basisCheck = await resolveBasisFields({
+        basis: b.basis !== undefined ? b.basis : existing.basis,
+        subCategoryId: b.subCategoryId !== undefined ? b.subCategoryId : existing.subCategoryId,
+        productIds: Array.isArray(b.productIds) ? b.productIds.map(Number) : undefined,
+      });
+      if (!basisCheck.ok) {
+        return NextResponse.json({ error: basisCheck.error }, { status: 400 });
+      }
+      basisData = { basis: basisCheck.basis, subCategoryId: basisCheck.subCategoryId };
+    }
+
     const offer = await withReconnect(() => prisma.$transaction(async (tx) => {
       // Replace the product list wholesale when one is sent.
       if (Array.isArray(b.productIds)) {
@@ -65,7 +90,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
       return tx.offer.update({
         where: { id },
-        data: {
+        data: <any>{
           ...(b.title !== undefined && { title: String(b.title).trim() }),
           ...(b.subtitle !== undefined && { subtitle: b.subtitle || null }),
           ...(b.description !== undefined && { description: b.description || null }),
@@ -75,6 +100,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           ...(b.ctaText !== undefined && { ctaText: b.ctaText || "Shop Now" }),
           ...(b.ctaLink !== undefined && { ctaLink: b.ctaLink || null }),
           ...(b.promoId !== undefined && { promoId: b.promoId ?? null }),
+          ...(basisData && basisData),
           ...(b.sortOrder !== undefined && { sortOrder: Number(b.sortOrder) || 0 }),
           ...(b.showOnLanding !== undefined && { showOnLanding: !!b.showOnLanding }),
           ...(b.startsAt !== undefined && { startsAt: b.startsAt ? new Date(b.startsAt) : null }),

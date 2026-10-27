@@ -10,9 +10,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { PartyPopper } from "lucide-react";
-import Link from "next/link";
-import { formatLKR } from "@/lib/utils";
-import type { LandingOffer, LandingOfferProduct } from "@/lib/offers";
+import type { LandingOffer } from "@/lib/offers";
+import  FestivalSection  from "./offer-dialog";
 
 function LoginToast() {
   const searchParams = useSearchParams();
@@ -62,77 +61,6 @@ const slides = [
   },
 ];
 
-const HOME_OFFER_LIMIT = 8;
-
-function OfferCta({
-  href,
-  children,
-  className,
-}: {
-  href: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  if (href.startsWith("http")) {
-    return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
-        {children}
-      </a>
-    );
-  }
-  return (
-    <Link href={href} className={className}>
-      {children}
-    </Link>
-  );
-}
-
-function OfferProductCard({ product }: { product: LandingOfferProduct }) {
-  const price =
-    product.sellingPrice == null
-      ? null
-      : product.discountPercent
-        ? product.sellingPrice * (1 - product.discountPercent / 100)
-        : product.sellingPrice;
-
-  return (
-    <Link
-      href={`/products/${product.id}`}
-      className="group block overflow-hidden rounded-2xl border border-zinc-100 bg-white text-zinc-900 shadow-sm transition-transform hover:-translate-y-1 hover:shadow-xl"
-    >
-      <div className="relative aspect-square overflow-hidden bg-zinc-100">
-        {product.image ? (
-          <img
-            src={product.image}
-            alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
-        ) : (
-          <div className="h-full w-full bg-gradient-to-br from-fuchsia-100 to-amber-100" />
-        )}
-        {product.discountPercent ? (
-          <span className="absolute left-3 top-3 rounded-lg bg-red-600 px-2.5 py-1 text-xs font-bold text-white">
-            -{product.discountPercent}%
-          </span>
-        ) : null}
-      </div>
-      <div className="space-y-1 p-4 text-center">
-        <h4 className="line-clamp-1 text-sm font-semibold">{product.name}</h4>
-        {price != null && (
-          <p className="text-sm">
-            <span className="font-bold text-fuchsia-600">{formatLKR(price)}</span>
-            {product.discountPercent && product.sellingPrice != null ? (
-              <span className="ml-2 text-xs text-zinc-400 line-through">
-                {formatLKR(product.sellingPrice)}
-              </span>
-            ) : null}
-          </p>
-        )}
-      </div>
-    </Link>
-  );
-}
-
 export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] }) {
   const [current, setCurrent] = useState(0);
 
@@ -164,15 +92,7 @@ export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] })
               className="w-full flex flex-col sm:flex-row items-center"
             >
               {/* TEXT SECTION */}
-              <div
-                className="
-    w-full sm:w-1/2
-    flex flex-col justify-center items-start
-    p-6 sm:p-8 sm:pl-16
-    text-center sm:text-left
-    mt-10 sm:mt-0
-  "
-              >
+              <div className="w-full sm:w-1/2 flex flex-col justify-center items-start p-6 sm:p-8 sm:pl-16 text-center sm:text-left mt-10 sm:mt-0">
                 <h1 className="text-3xl sm:text-5xl font-bold mb-4 leading-tight">
                   {slides[current].title}
                 </h1>
@@ -187,15 +107,7 @@ export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] })
               </div>
 
               {/* IMAGE SECTION */}
-              <div
-                className="
-                  relative
-                  w-full sm:w-1/2
-                  h-[300px] sm:h-[500px]
-                  flex items-center justify-center
-                  mt-7
-                "
-              >
+              <div className="relative w-full sm:w-1/2 h-[300px] sm:h-[500px] flex items-center justify-center mt-7">
                 {/* Background Glow */}
                 <motion.div
                   animate={{
@@ -222,10 +134,7 @@ export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] })
                 />
 
                 {/* Animated Rings */}
-                <svg
-                  viewBox="0 0 500 500"
-                  className="absolute w-full h-full"
-                >
+                <svg viewBox="0 0 500 500" className="absolute w-full h-full">
                   <motion.circle
                     cx="250"
                     cy="250"
@@ -235,14 +144,9 @@ export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] })
                     fill="transparent"
                     strokeDasharray="15 10"
                     animate={{ rotate: 360 }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 20,
-                      ease: "linear",
-                    }}
+                    transition={{ repeat: Infinity, duration: 20, ease: "linear" }}
                     style={{ transformOrigin: "center" }}
                   />
-
                   <motion.circle
                     cx="250"
                     cy="250"
@@ -252,11 +156,7 @@ export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] })
                     fill="transparent"
                     strokeDasharray="10 10"
                     animate={{ rotate: -360 }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 25,
-                      ease: "linear",
-                    }}
+                    transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
                     style={{ transformOrigin: "center" }}
                   />
                 </svg>
@@ -271,10 +171,10 @@ export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] })
             <button
               key={index}
               onClick={() => setCurrent(index)}
-              className={`h-3 rounded-full transition-all duration-300 ${current === index
-                ? "w-8 bg-fuchsia-500"
-                : "w-3 bg-gray-300"
-                }`}
+              aria-label={`Slide ${index + 1}`}
+              className={`h-3 rounded-full transition-all duration-300 ${
+                current === index ? "w-8 bg-fuchsia-500" : "w-3 bg-gray-300"
+              }`}
             />
           ))}
         </div>
@@ -285,97 +185,9 @@ export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] })
           <ProductCard />
         </div>
 
-        {/* FESTIVAL / OFFER SECTION */}
-        {offers.length > 0 && (
-          <section className="mt-14 mb-14 space-y-12 px-4 sm:px-8">
-            <div className="text-center">
-              <p className="text-sm font-bold uppercase tracking-[0.3em] text-fuchsia-500">
-                Limited Time
-              </p>
-              <h2 className="mt-2 text-3xl font-black sm:text-4xl">Festival Offers</h2>
-            </div>
-
-            {offers.map((offer) => {
-              const ctaHref = offer.ctaLink || `/offers`;
-              const shown = offer.products.slice(0, HOME_OFFER_LIMIT);
-              const hasMore = offer.products.length > HOME_OFFER_LIMIT;
-
-              return (
-                <div key={offer.id} className="space-y-6">
-                  {/* Banner */}
-                  <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-fuchsia-900 via-purple-900 to-fuchsia-950 border border-fuchsia-800/40">
-                    <div className="absolute -top-10 -left-10 h-56 w-56 rounded-full bg-fuchsia-500/20 blur-3xl" />
-                    <div className="absolute -bottom-10 -right-10 h-56 w-56 rounded-full bg-purple-500/20 blur-3xl" />
-
-                    <div className="relative z-10 flex flex-col items-center justify-between gap-6 p-8 sm:flex-row sm:p-12">
-                      <div className="text-center sm:text-left">
-                        <span className="mb-3 inline-block rounded-full bg-fuchsia-500/10 px-3 py-1 text-xs font-semibold tracking-wider text-fuchsia-300">
-                          {offer.badgeText || offer.subtitle || "LIMITED TIME OFFER"}
-                        </span>
-                        <h3 className="mb-2 text-2xl font-bold leading-tight text-white sm:text-4xl">
-                          {offer.title}
-                        </h3>
-                        {offer.description && (
-                          <p className="max-w-md text-sm text-gray-300 sm:text-base">
-                            {offer.description}
-                          </p>
-                        )}
-                        {offer.promoCode && (
-                          <span className="mt-3 inline-block rounded-xl border border-dashed border-fuchsia-400 bg-white/95 px-3 py-1.5 text-sm font-bold text-fuchsia-600">
-                            Use code: {offer.promoCode}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex shrink-0 flex-col items-center gap-3">
-                        <OfferCta
-                          href={ctaHref}
-                          className="inline-flex h-11 items-center justify-center rounded-md bg-fuchsia-500 px-8 text-sm font-semibold text-white transition-colors hover:bg-fuchsia-600"
-                        >
-                          {offer.ctaText || "Shop Now"}
-                        </OfferCta>
-                        {offer.endsAt && (
-                          <span className="text-xs text-gray-400">
-                            Ends {new Date(offer.endsAt).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Offer products */}
-                  {offer.products.length > 0 && (
-                    <div className="space-y-6">
-                      {offer.products.length <= HOME_OFFER_LIMIT ? (
-                        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                          {shown.map((p) => (
-                            <OfferProductCard key={p.id} product={p} />
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="relative">
-                          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                            {shown.map((p) => (
-                              <OfferProductCard key={p.id} product={p} />
-                            ))}
-                          </div>
-                          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex h-32 items-end justify-center bg-gradient-to-t from-white to-transparent">
-                            <OfferCta
-                              href={`/collection?offer=${offer.id}`}
-                              className="pointer-events-auto mb-1 inline-flex h-11 items-center rounded-md bg-zinc-900 px-8 text-sm font-semibold text-white transition-colors hover:bg-fuchsia-600"
-                            >
-                              View all {offer.products.length} products
-                            </OfferCta>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </section>
-        )}
+        <div className="mt-14">
+          <FestivalSection offers={offers} />
+        </div>
       </Card>
     </>
   );

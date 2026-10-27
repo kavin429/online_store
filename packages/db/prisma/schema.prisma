@@ -133,6 +133,7 @@ model SubCategory {
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   products Product[]
+  offers   Offer[]
 
   variantTypes SubCategoryVariantType[]
 
@@ -763,17 +764,28 @@ enum OfferStatus {
   INACTIVE
 }
 
-// Whether an offer is allowed to appear on the storefront.
-// Admin-created offers are APPROVED straight away; vendor-created offers
-// start as PENDING and only go live once an admin approves them.
 enum OfferApprovalStatus {
   PENDING
   APPROVED
   REJECTED
 }
+enum OfferBasis {
+  FESTIVE
+  SPECIAL_DAY
+  ANNIVERSARY
+  NEW_CUSTOMER
+  FLASH_SALE
+  END_OF_SEASON
+  PAYDAY
+  PAYMENT
+  LOYALTY
+  PRODUCT_LAUNCH
+  CLEARANCE
+  BUNDLE
+  CATEGORY
+  OTHER
+}
 
-// A landing-page deal/banner. Display-only: it can point at products and
-// (optionally) show a Promo code, but it does not change prices by itself.
 model Offer {
   id Int @id @default(autoincrement())
 
@@ -794,6 +806,10 @@ model Offer {
   // The vendor that submitted the offer. Null for offers created by an admin.
   vendorId Int?
   vendor   Vendor? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+
+  basis         OfferBasis?
+  subCategoryId Int?
+  subCategory   SubCategory? @relation(fields: [subCategoryId], references: [id], onDelete: SetNull)
 
   approvalStatus OfferApprovalStatus @default(APPROVED)
   reviewNote     String?

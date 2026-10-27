@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { serializeOffer } from "@/lib/offers";
 
 export default async function OffersPage() {
-  const [offers, products, promos] = await Promise.all([
+  const [offers, products, promos, subCategories] = await Promise.all([
     prisma.offer.findMany({
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
       include: {
@@ -23,6 +23,10 @@ export default async function OffersPage() {
       select: { id: true, code: true },
       orderBy: { code: "asc" },
     }),
+    prisma.subCategory.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   return (
@@ -30,6 +34,7 @@ export default async function OffersPage() {
       data={JSON.parse(JSON.stringify(offers.map(serializeOffer)))}
       products={products}
       promos={promos}
+      subCategories={subCategories}
     />
   );
 }
