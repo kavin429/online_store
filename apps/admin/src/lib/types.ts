@@ -284,6 +284,11 @@ export type OptionEntry = {
 // Append to src/lib/types.ts
 export type OfferStatus = "ACTIVE" | "INACTIVE";
 export type OfferApprovalStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type OfferBasis =
+  | "FESTIVE" | "SPECIAL_DAY" | "ANNIVERSARY" | "NEW_CUSTOMER"
+  | "FLASH_SALE" | "END_OF_SEASON" | "PAYDAY" | "PAYMENT"
+  | "LOYALTY" | "PRODUCT_LAUNCH" | "CLEARANCE" | "BUNDLE"
+  | "CATEGORY" | "OTHER";
 
 export type Offer = {
   id: number;
@@ -303,6 +308,9 @@ export type Offer = {
   sortOrder: number;
   showOnLanding: boolean;
   approvalStatus: OfferApprovalStatus;
+  basis?: OfferBasis | null;
+  subCategoryId?: number | null;
+  subCategory?: { id: number; name: string } | null;
   reviewNote?: string | null;
   startsAt?: string | null;
   endsAt?: string | null;

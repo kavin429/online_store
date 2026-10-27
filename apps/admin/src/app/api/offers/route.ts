@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma, withReconnect } from "@/lib/prisma";
 import { serializeOffer } from "@/lib/offers";
+import { resolveBasisFields } from "@/lib/offer-basis";
 import { OFFER_REQUEST_MAX_BYTES, validateOfferImages } from "@online-store/ui/lib/image";
 
 import { isAdmin } from "@/lib/auth";
 const offerInclude = {
   promo: { select: { id: true, code: true } },
   vendor: { select: { id: true, name: true } },
+  subCategory: { select: { id: true, name: true } },
   products: { include: { product: { select: { id: true, name: true } } } },
 } as const;
 
@@ -54,6 +56,15 @@ export async function POST(req: NextRequest) {
 
     const productIds: number[] = Array.isArray(b.productIds) ? b.productIds.map(Number) : [];
 
+    const basisCheck = await resolveBasisFields({
+      basis: b.basis,
+      subCategoryId: b.subCategoryId,
+      productIds,
+    });
+    if (!basisCheck.ok) {
+      return NextResponse.json({ error: basisCheck.error }, { status: 400 });
+    }
+
     const offer = await withReconnect(() => prisma.offer.create({
       data: {
         title: String(b.title).trim(),
@@ -65,6 +76,8 @@ export async function POST(req: NextRequest) {
         ctaText: b.ctaText || "Shop Now",
         ctaLink: b.ctaLink || null,
         promoId: b.promoId ?? null,
+        basis: basisCheck.basis,
+        subCategoryId: basisCheck.subCategoryId,
         sortOrder: Number(b.sortOrder) || 0,
         showOnLanding: b.showOnLanding ?? true,
         startsAt: b.startsAt ? new Date(b.startsAt) : null,

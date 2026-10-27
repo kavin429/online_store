@@ -8,11 +8,22 @@ import { Button } from "@online-store/ui/button";
 import { Badge } from "@online-store/ui/badge";
 import { Plus } from "lucide-react";
 import ConfirmDeleteDialog from "@/components/comman/confirm-delete-dialog";
-import OfferFormDialog, { OfferPayload, ProductOption, PromoOption } from "./offer-form";
+import OfferFormDialog, {
+  OfferPayload,
+  ProductOption,
+  PromoOption,
+  SubCategoryOption,
+  OFFER_BASIS_OPTIONS,
+} from "./offer-form";
 
-type Props = { data: Offer[]; products: ProductOption[]; promos: PromoOption[] };
+type Props = {
+  data: Offer[];
+  products: ProductOption[]; // each: { id, name, subCategoryId }
+  promos: PromoOption[];
+  subCategories: SubCategoryOption[]; // each: { id, name }
+};
 
-export default function OfferMain({ data, products, promos }: Props) {
+export default function OfferMain({ data, products, promos, subCategories }: Props) {
   const [offers, setOffers] = useState<Offer[]>(data);
 
   const [viewing, setViewing] = useState<Offer | null>(null);
@@ -30,6 +41,14 @@ export default function OfferMain({ data, products, promos }: Props) {
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleView = (o: Offer) => { setViewing(o); setViewOpen(true); };
+
+  const basisLabel = (basis?: string | null) =>
+    OFFER_BASIS_OPTIONS.find((b) => b.value === basis)?.label ?? "—";
+
+  const subCategoryName = (o: Offer) =>
+    o.subCategory?.name ??
+    subCategories.find((s) => s.id === o.subCategoryId)?.name ??
+    null;
 
   const setApproval = async (o: Offer, approvalStatus: "APPROVED" | "REJECTED") => {
     try {
@@ -157,6 +176,16 @@ export default function OfferMain({ data, products, promos }: Props) {
               {viewing.description && <p className="text-muted-foreground">{viewing.description}</p>}
               <div className="border-t pt-2 space-y-1">
                 <div className="flex justify-between">
+                  <span className="text-muted-foreground">Based on</span>
+                  <span>{basisLabel(viewing.basis)}</span>
+                </div>
+                {subCategoryName(viewing) && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Sub category</span>
+                    <span>{subCategoryName(viewing)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
                   <span className="text-muted-foreground">Badge</span>
                   <span>{viewing.badgeText || "—"}</span>
                 </div>
@@ -205,6 +234,7 @@ export default function OfferMain({ data, products, promos }: Props) {
         mode={formMode}
         offer={editTarget}
         products={products}
+        subCategories={subCategories}
         promos={promos}
         onOpenChange={setFormOpen}
         onSubmit={handleSubmit}
