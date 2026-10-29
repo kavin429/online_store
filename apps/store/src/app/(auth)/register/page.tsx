@@ -55,7 +55,14 @@ const formSchema = z
 
 export default function SignupPage() {
   const [step, setStep] = useState(1);
-const router = useRouter();
+  const router = useRouter();
+  const [verificationMethod, setVerificationMethod] = useState<"email" | "phone">("email");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [verified, setVerified] = useState(false);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -76,11 +83,82 @@ const router = useRouter();
     const valid = await form.trigger();
     if (!valid) return;
     setStep(2);
+    setCodeSent(false);
+    setVerified(false);
+    setVerificationCode("");
   };
 
   const prevStep = () => setStep(1);
 
+  const sendVerificationCode = async () => {
+    try {
+      setIsSending(true);
+      const values = form.getValues();
+      const response = await fetch("/api/auth/send-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: verificationMethod,
+          email: values.email,
+          phone: values.phone,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Failed to send verification code");
+        return;
+      }
+
+      setCodeSent(true);
+      toast.success(data.message || "Verification code sent");
+    } catch (error) {
+      console.log(error);
+      toast.error("Something went wrong");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const verifyCode = async () => {
+    try {
+      setIsVerifying(true);
+      const values = form.getValues();
+      const response = await fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: verificationMethod,
+          email: values.email,
+          phone: values.phone,
+          code: verificationCode,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast.error(data.error || "Verification failed");
+        return;
+      }
+
+      setVerified(true);
+      toast.success("Verification successful");
+    } catch (error) {
+      console.log(error);
+      toast.error("Something went wrong");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (step === 2 && !verified) {
+      toast.error("Please verify your account first");
+      return;
+    }
+
     try {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
@@ -98,6 +176,7 @@ const router = useRouter();
       setStep(3);
     } catch (error) {
       console.log(error);
+      toast.error("Something went wrong");
     }
   };
 
@@ -251,45 +330,99 @@ const router = useRouter();
 
                     <div className="space-y-3">
                       <label className="flex items-center gap-4 border border-white/60 dark:border-fuchsia-900/40 bg-white/50 dark:bg-zinc-800/50 rounded-xl p-4 cursor-pointer hover:border-fuchsia-400 dark:hover:border-fuchsia-600 transition-colors">
-                        <input type="radio" name="verify" className="accent-fuchsia-500" />
+                        <input 
+                          type="radio" 
+                          name="verify" 
+                          className="accent-fuchsia-500" 
+                          checked={verificationMethod === "email"}
+                          onChange={() => setVerificationMethod("email")}
+                        />
                         <Mail className="text-fuchsia-500 h-4 w-4" />
                         <div>
                           <p className="text-zinc-800 dark:text-zinc-100 font-medium text-sm">
                             Verify by Email
                           </p>
                           <p className="text-zinc-500 dark:text-zinc-400 text-xs">
-                            Receive code on email
+                            Receive code on {form.getValues("email")}
                           </p>
                         </div>
                       </label>
 
                       <label className="flex items-center gap-4 border border-white/60 dark:border-fuchsia-900/40 bg-white/50 dark:bg-zinc-800/50 rounded-xl p-4 cursor-pointer hover:border-fuchsia-400 dark:hover:border-fuchsia-600 transition-colors">
-                        <input type="radio" name="verify" className="accent-fuchsia-500" />
+                        <input 
+                          type="radio" 
+                          name="verify" 
+                          className="accent-fuchsia-500" 
+                          checked={verificationMethod === "phone"}
+                          onChange={() => setVerificationMethod("phone")}
+                        />
                         <Phone className="text-fuchsia-500 h-4 w-4" />
                         <div>
                           <p className="text-zinc-800 dark:text-zinc-100 font-medium text-sm">
                             Verify by Phone
                           </p>
                           <p className="text-zinc-500 dark:text-zinc-400 text-xs">
-                            Receive OTP on phone
+                            Receive OTP on {form.getValues("phone")}
                           </p>
                         </div>
                       </label>
                     </div>
 
-                    <div className="mt-5">
-                      <Input
-                        placeholder="Enter Verification Code"
+                    <div className="mt-5 flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={sendVerificationCode}
+                        disabled={isSending}
+                        variant="outline"
                         className="
                           h-11 rounded-full
-                          bg-white/60 dark:bg-zinc-800/60
-                          border border-white/60 dark:border-fuchsia-900/40
+                          border-white/60 dark:border-zinc-700
+                          bg-white/50 dark:bg-zinc-800/50
+                          hover:bg-white/70 dark:hover:bg-zinc-800
                           text-zinc-700 dark:text-zinc-200
-                          placeholder:text-zinc-400 dark:placeholder:text-zinc-500
-                          focus-visible:ring-fuchsia-400 dark:focus-visible:ring-fuchsia-600
                         "
-                      />
+                      >
+                        {isSending ? "Sending..." : codeSent ? "Resend Code" : "Send Code"}
+                      </Button>
                     </div>
+
+                    {codeSent && (
+                      <>
+                        <div className="mt-4">
+                          <Input
+                            placeholder="Enter Verification Code"
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value)}
+                            className="
+                              h-11 rounded-full
+                              bg-white/60 dark:bg-zinc-800/60
+                              border border-white/60 dark:border-fuchsia-900/40
+                              text-zinc-700 dark:text-zinc-200
+                              placeholder:text-zinc-400 dark:placeholder:text-zinc-500
+                              focus-visible:ring-fuchsia-400 dark:focus-visible:ring-fuchsia-600
+                            "
+                          />
+                        </div>
+
+                        <div className="mt-3">
+                          <Button
+                            type="button"
+                            onClick={verifyCode}
+                            disabled={isVerifying || verified || !verificationCode}
+                            variant="outline"
+                            className="
+                              h-11 px-6 rounded-full
+                              border-white/60 dark:border-zinc-700
+                              bg-white/50 dark:bg-zinc-800/50
+                              hover:bg-white/70 dark:hover:bg-zinc-800
+                              text-zinc-700 dark:text-zinc-200
+                            "
+                          >
+                            {verified ? "Verified ✓" : isVerifying ? "Verifying..." : "Verify Code"}
+                          </Button>
+                        </div>
+                      </>
+                    )}
 
                     <div className="flex gap-3 mt-7">
                       <Button
@@ -310,11 +443,13 @@ const router = useRouter();
                       <Button
                         type="submit"
                         variant="shoe"
+                        disabled={!verified}
                         className="
                           flex-1 h-11 rounded-full
                           bg-gradient-to-r from-fuchsia-600 to-fuchsia-500
                           hover:from-fuchsia-700 hover:to-fuchsia-600
                           text-white shadow-md shadow-fuchsia-500/30
+                          disabled:opacity-50
                         "
                       >
                         Verify & Create

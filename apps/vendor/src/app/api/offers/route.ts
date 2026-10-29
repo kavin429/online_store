@@ -7,6 +7,23 @@ const offerInclude = {
   products: { include: { product: { select: { id: true, name: true } } } },
 } as const;
 
+const OFFER_BASES = [
+  "FESTIVE",
+  "SPECIAL_DAY",
+  "ANNIVERSARY",
+  "NEW_CUSTOMER",
+  "FLASH_SALE",
+  "END_OF_SEASON",
+  "PAYDAY",
+  "PAYMENT",
+  "LOYALTY",
+  "PRODUCT_LAUNCH",
+  "CLEARANCE",
+  "BUNDLE",
+  "CATEGORY",
+  "OTHER",
+] as const;
+
 function parseOfferImages(images: string | null | undefined): string[] {
   if (!images) return [];
   try {
@@ -81,31 +98,72 @@ export async function POST(req: NextRequest) {
     const owned = await withReconnect(() =>
       prisma.product.findMany({
         where: { id: { in: requested }, vendorId },
-        select: { id: true },
+        select: { id: true, subcategoryId: true },
       }),
     );
     const productIds = owned.map((p) => p.id);
 
-    const offer = await withReconnect(() => prisma.offer.create({
-      data: {
-        title: String(b.title).trim(),
-        subtitle: b.subtitle || null,
-        description: b.description || null,
-        image: b.image || null,
-        images: toImages(b.images),
-        badgeText: b.badgeText || null,
-        ctaText: b.ctaText || "Shop Now",
-        ctaLink: b.ctaLink || null,
-        sortOrder: 0,
-        showOnLanding: true,
-        startsAt: b.startsAt ? new Date(b.startsAt) : null,
-        endsAt: b.endsAt ? new Date(b.endsAt) : null,
-        status: "ACTIVE",
-        vendorId,
-        approvalStatus: "PENDING", // needs admin approval before landing
-        products: { create: productIds.map((productId) => ({ productId })) },
-      },
-      include: offerInclude,
+    const basis = OFFER_BASES.includes(b.basis) ? b.basis : undefined;
+
+    // Clearance offers live under the product's sub category so the admin
+    // offer form's validation stays happy if the offer is edited later.
+    const subCategoryIds = Array.from(
+      new Set(
+        owned
+          .map((product) => product.subcategoryId)
+          .filter((id): id is number => typeof id === "number"),
+      ),
+    );
+    const subCategoryId =
+      basis === "CLEARANCE" && subCategoryIds.length === 1 ? subCategoryIds[0] : null;
+
+    let discountPercent: number | null = null;
+    if (b.discountPercent !== undefined && b.discountPercent !== null && b.discountPercent !== "") {
+      const parsedDiscount = Number(b.discountPercent);
+      if (!Number.isFinite(parsedDiscount) || parsedDiscount <= 0 || parsedDiscount >= 100) {
+        return NextResponse.json(
+          { error: "discountPercent must be between 1 and 99" },
+          { status: 400 },
+        );
+      }
+      discountPercent = parsedDiscount;
+    }
+
+    const offer = await withReconnect(() => prisma.$transaction(async (tx) => {
+      const created = await tx.offer.create({
+        data: {
+          title: String(b.title).trim(),
+          subtitle: b.subtitle || null,
+          description: b.description || null,
+          image: b.image || null,
+          images: toImages(b.images),
+          badgeText: b.badgeText || null,
+          ctaText: b.ctaText || "Shop Now",
+          ctaLink: b.ctaLink || null,
+          basis,
+          subCategoryId,
+          sortOrder: 0,
+          showOnLanding: true,
+          startsAt: b.startsAt ? new Date(b.startsAt) : null,
+          endsAt: b.endsAt ? new Date(b.endsAt) : null,
+          status: "ACTIVE",
+          vendorId,
+          approvalStatus: "PENDING", // needs admin approval before landing
+          products: { create: productIds.map((productId) => ({ productId })) },
+        },
+        include: offerInclude,
+      });
+
+      // A clearance offer also applies the discount to the selected products
+      // so the storefront shows the reduced price.
+      if (discountPercent !== null && productIds.length > 0) {
+        await tx.product.updateMany({
+          where: { id: { in: productIds }, vendorId },
+          data: { discountPercent },
+        });
+      }
+
+      return created;
     }));
 
     return NextResponse.json(serializeOffer(offer), { status: 201 });

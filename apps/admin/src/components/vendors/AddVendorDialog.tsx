@@ -29,6 +29,9 @@ import {
 } from "@online-store/ui/select";
 import { toast } from "sonner";
 import { vendorSchema, VendorFormValues } from "@/lib/validator/vendor_validator";
+import { Input } from "@online-store/ui/components/input";
+
+const GEO_API = "https://countriesnow.space/api/v0.1";
 
 type Props = {
   open: boolean;
@@ -61,6 +64,59 @@ const emptyValues: VendorFormValues = {
   password: "",
 };
 
+const labelClass = "text-fuchsia-900 dark:text-fuchsia-200";
+
+/**
+ * Dropdown fed by an API list. If the API returns nothing for the chosen
+ * parent (some countries have no province/city data) it falls back to a
+ * normal text input so the user can still type a value.
+ */
+function LocationSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  loading,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder: string;
+  loading: boolean;
+  disabled: boolean;
+}) {
+  if (!disabled && !loading && options.length === 0) {
+    return (
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    );
+  }
+
+  // Keep a saved value (edit mode) visible even if the API list doesn't contain it
+  const list = value && !options.includes(value) ? [value, ...options] : options;
+
+  return (
+    <Select value={value || ""} onValueChange={onChange} disabled={disabled || loading}>
+      <FormControl>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={loading ? "Loading..." : placeholder} />
+        </SelectTrigger>
+      </FormControl>
+      <SelectContent>
+        {list.map((item) => (
+          <SelectItem key={item} value={item}>
+            {item}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 export default function AddVendorDialog({
   open,
   setOpen,
@@ -76,6 +132,17 @@ export default function AddVendorDialog({
 
   const [showPassword, setShowPassword] = useState(false);
   const loading = form.formState.isSubmitting;
+
+  // Location dropdown data
+  const [countries, setCountries] = useState<string[]>([]);
+  const [provinces, setProvinces] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+  const [loadingCountries, setLoadingCountries] = useState(false);
+  const [loadingProvinces, setLoadingProvinces] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
+
+  const country = form.watch("country") || "";
+  const province = form.watch("province") || "";
 
   useEffect(() => {
     if (!open) {
@@ -95,6 +162,99 @@ export default function AddVendorDialog({
       });
     }
   }, [open, defaultValues, form]);
+
+  // Load countries once when the dialog opens
+  useEffect(() => {
+    if (!open || countries.length > 0) return;
+    let cancelled = false;
+    setLoadingCountries(true);
+
+    fetch(`${GEO_API}/countries/iso`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled) return;
+        const names: string[] = (json?.data ?? [])
+          .map((c: { name: string }) => c.name)
+          .filter(Boolean)
+          .sort((a: string, b: string) => a.localeCompare(b));
+        setCountries(names);
+      })
+      .catch((err) => console.error("Failed to fetch countries:", err))
+      .finally(() => {
+        if (!cancelled) setLoadingCountries(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, countries.length]);
+
+  // Load provinces (states) when the country changes
+  useEffect(() => {
+    if (!country) {
+      setProvinces([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingProvinces(true);
+
+    fetch(`${GEO_API}/countries/states`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ country }),
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled) return;
+        const names: string[] = (json?.data?.states ?? [])
+          .map((s: { name: string }) => s.name)
+          .filter(Boolean);
+        setProvinces(names);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch provinces:", err);
+        if (!cancelled) setProvinces([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingProvinces(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [country]);
+
+  // Load cities when the province changes
+  useEffect(() => {
+    if (!country || !province) {
+      setCities([]);
+      return;
+    }
+    let cancelled = false;
+    setLoadingCities(true);
+
+    fetch(`${GEO_API}/countries/state/cities`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ country, state: province }),
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled) return;
+        setCities(Array.isArray(json?.data) ? json.data : []);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch cities:", err);
+        if (!cancelled) setCities([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingCities(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [country, province]);
 
   const onSubmit = async (values: VendorFormValues) => {
     const url = isEdit ? `/api/vendors/${defaultValues!.id}` : "/api/vendors";
@@ -125,7 +285,7 @@ export default function AddVendorDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl space-y-4 overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Vendor" : "Add New Vendor"}</DialogTitle>
         </DialogHeader>
@@ -138,13 +298,9 @@ export default function AddVendorDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Vendor</FormLabel>
+                  <FormLabel className={labelClass}>Vendor</FormLabel>
                   <FormControl>
-                    <input
-                      {...field}
-                      placeholder="Enter vendor name"
-                      className="border p-2 w-full rounded"
-                    />
+                    <Input {...field} placeholder="Enter vendor name" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -152,19 +308,18 @@ export default function AddVendorDialog({
             />
 
             {/* Contact: Email + Phone */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contact Email</FormLabel>
+                    <FormLabel className={labelClass}>Contact Email</FormLabel>
                     <FormControl>
-                      <input
+                      <Input
                         {...field}
                         type="email"
                         placeholder="vendor@example.com"
-                        className="border p-2 w-full rounded"
                       />
                     </FormControl>
                     <FormMessage />
@@ -177,13 +332,9 @@ export default function AddVendorDialog({
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Contact Phone</FormLabel>
+                    <FormLabel className={labelClass}>Contact Phone</FormLabel>
                     <FormControl>
-                      <input
-                        {...field}
-                        placeholder="Enter phone number"
-                        className="border p-2 w-full rounded"
-                      />
+                      <Input {...field} placeholder="Enter phone number" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -191,21 +342,28 @@ export default function AddVendorDialog({
               />
             </div>
 
-            {/* Location: Country + Province */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Location: Country + Province (dropdowns) */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="country"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Country</FormLabel>
-                    <FormControl>
-                      <input
-                        {...field}
-                        placeholder="Enter country"
-                        className="border p-2 w-full rounded"
-                      />
-                    </FormControl>
+                    <FormLabel className={labelClass}>Country</FormLabel>
+                    <LocationSelect
+                      value={field.value || ""}
+                      options={countries}
+                      placeholder="Select country"
+                      loading={loadingCountries}
+                      disabled={false}
+                      onChange={(val) => {
+                        field.onChange(val);
+                        // reset dependent fields when the country changes
+                        form.setValue("province", "");
+                        form.setValue("district", "");
+                        form.setValue("city", "");
+                      }}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -216,14 +374,18 @@ export default function AddVendorDialog({
                 name="province"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Province</FormLabel>
-                    <FormControl>
-                      <input
-                        {...field}
-                        placeholder="Enter province"
-                        className="border p-2 w-full rounded"
-                      />
-                    </FormControl>
+                    <FormLabel className={labelClass}>Province</FormLabel>
+                    <LocationSelect
+                      value={field.value || ""}
+                      options={provinces}
+                      placeholder="Select province"
+                      loading={loadingProvinces}
+                      disabled={!country}
+                      onChange={(val) => {
+                        field.onChange(val);
+                        form.setValue("city", "");
+                      }}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -231,19 +393,16 @@ export default function AddVendorDialog({
             </div>
 
             {/* Location: District + City */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* No free global API covers districts, so this stays a text input */}
               <FormField
                 control={form.control}
                 name="district"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>District</FormLabel>
+                    <FormLabel className={labelClass}>District</FormLabel>
                     <FormControl>
-                      <input
-                        {...field}
-                        placeholder="Enter district"
-                        className="border p-2 w-full rounded"
-                      />
+                      <Input {...field} placeholder="Enter district" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -255,14 +414,15 @@ export default function AddVendorDialog({
                 name="city"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>City</FormLabel>
-                    <FormControl>
-                      <input
-                        {...field}
-                        placeholder="Enter city"
-                        className="border p-2 w-full rounded"
-                      />
-                    </FormControl>
+                    <FormLabel className={labelClass}>City</FormLabel>
+                    <LocationSelect
+                      value={field.value || ""}
+                      options={cities}
+                      placeholder="Select city"
+                      loading={loadingCities}
+                      disabled={!province}
+                      onChange={field.onChange}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -275,18 +435,15 @@ export default function AddVendorDialog({
               name="address"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Address</FormLabel>
+                  <FormLabel className={labelClass}>Address</FormLabel>
                   <FormControl>
-                    <input
-                      {...field}
-                      placeholder="Enter full address"
-                      className="border p-2 w-full rounded"
-                    />
+                    <Input {...field} placeholder="Enter full address" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             {/* Status — only shown when adding */}
             {!isEdit && (
               <FormField
@@ -294,7 +451,7 @@ export default function AddVendorDialog({
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel className={labelClass}>Status</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger className="w-full">
@@ -320,34 +477,35 @@ export default function AddVendorDialog({
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
+                  <FormLabel className={labelClass}>
                     {isEdit ? "New Password" : "Password"}
                     {isEdit && (
-                      <span className="text-muted-foreground text-xs ml-1">
+                      <span className="ml-1 text-xs text-fuchsia-700/70 dark:text-fuchsia-300/70">
                         (leave blank to keep current)
                       </span>
                     )}
                   </FormLabel>
                   <FormControl>
-                    <div className="relative flex gap-2">
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       <div className="relative flex-1">
-                        <input
+                        <Input
                           {...field}
                           type={showPassword ? "text" : "password"}
                           placeholder={isEdit ? "Enter new password" : "Enter password"}
-                          className="border p-2 w-full rounded pr-10"
+                          className="pr-10"
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword((v) => !v)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-fuchsia-500 hover:text-fuchsia-700"
                         >
-                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
                       <Button
                         type="button"
                         variant="outline"
+                        className="w-full sm:w-auto"
                         onClick={() => {
                           const generated = generatePassword();
                           field.onChange(generated);
@@ -363,11 +521,16 @@ export default function AddVendorDialog({
               )}
             />
 
-            <DialogFooter className="flex justify-between">
-              <Button variant="outline" type="button" onClick={() => setOpen(false)}>
+            <DialogFooter className="sm:justify-between">
+              <Button
+                variant="outline"
+                type="button"
+                className="w-full sm:w-auto"
+                onClick={() => setOpen(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" className="w-full sm:w-auto" disabled={loading}>
                 {loading ? "Saving..." : isEdit ? "Update Vendor" : "Add Vendor"}
               </Button>
             </DialogFooter>
@@ -398,5 +561,3 @@ export default function AddVendorDialog({
     return password;
   }
 }
-
-

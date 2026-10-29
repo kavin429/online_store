@@ -93,11 +93,11 @@ export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] })
             >
               {/* TEXT SECTION */}
               <div className="w-full sm:w-1/2 flex flex-col justify-center items-start p-6 sm:p-8 sm:pl-16 text-center sm:text-left mt-10 sm:mt-0">
-                <h1 className="text-3xl sm:text-5xl font-bold mb-4 leading-tight">
+                <h1 className="text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 leading-tight">
                   {slides[current].title}
                 </h1>
 
-                <p className="mb-6 text-base sm:text-lg text-gray-600 dark:text-gray-300">
+                <p className="mb-4 sm:mb-6 text-sm sm:text-base lg:text-lg text-gray-600 dark:text-gray-300">
                   {slides[current].description}
                 </p>
 
@@ -130,7 +130,7 @@ export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] })
                   animate={{ opacity: 1, scale: 1, rotate: 0 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   transition={{ duration: 0.8 }}
-                  className="relative z-10 w-[250px] sm:w-[420px] object-contain drop-shadow-2xl"
+                  className="relative z-10 w-[200px] xs:w-[230px] sm:w-[320px] lg:w-[420px] object-contain drop-shadow-2xl"
                 />
 
                 {/* Animated Rings */}

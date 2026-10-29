@@ -1,15 +1,97 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useCart } from "@/context/addToCard";
+import { useCart, type CartItem } from "@/context/addToCard";
 import { formatLKR } from "@/lib/utils";
 import { Button } from "@online-store/ui/button";
 import { Card } from "@online-store/ui/card";
-import { Minus, Plus, Trash2, ShoppingCart, ArrowLeft } from "lucide-react";
+import {
+  Minus,
+  Plus,
+  Trash2,
+  ShoppingCart,
+  ArrowLeft,
+  AlertTriangle,
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
 
 export default function CartPage() {
-  const { cart, removeFromCart, updateQuantity, clearCart } = useCart();
+  const {
+    cart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    refreshStock,
+    stockById,
+  } = useCart();
+
+  const [checking, setChecking] = useState(true);
+  const [pendingId, setPendingId] = useState<number | null>(null);
+
+  // Every time the cart page opens, pull the real stock from the database.
+  useEffect(() => {
+    let active = true;
+
+    refreshStock(cart).finally(() => {
+      if (active) setChecking(false);
+    });
+
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const stockOf = (item: CartItem) => stockById[item.id] ?? item.stock;
+
+  const hasStockIssue = cart.some((item) => {
+    const stock = stockOf(item);
+    return stock !== undefined && (stock <= 0 || item.quantity > stock);
+  });
+
+  const handleIncrease = async (item: CartItem) => {
+    if (pendingId !== null) return;
+
+    setPendingId(item.id);
+    try {
+      // Ask the database for the latest count before changing anything.
+      const stocks = await refreshStock([item]);
+      const stock = stocks[item.id] ?? item.stock;
+
+      if (stock === undefined) {
+        toast.error("Could not check stock. Please try again.");
+        return;
+      }
+
+      if (stock <= 0) {
+        toast.error(`${item.name} is out of stock`);
+        return;
+      }
+
+      if (item.quantity + 1 > stock) {
+        toast.error(`Only ${stock} left in stock`);
+        return;
+      }
+
+      updateQuantity(item.id, item.quantity + 1);
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  const handleDecrease = (item: CartItem) => {
+    const result = updateQuantity(item.id, item.quantity - 1);
+
+    if (!result.ok) {
+      toast.error(result.message ?? "Could not update quantity");
+      return;
+    }
+
+    // Keep the displayed stock fresh without blocking the click.
+    void refreshStock([item]);
+  };
 
   const subtotal = cart.reduce(
     (sum, item) => sum + item.sellingPrice * item.quantity,
@@ -57,67 +139,133 @@ export default function CartPage() {
         </button>
       </div>
 
+      {hasStockIssue && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <p>
+            Some items are no longer available in the requested quantity. Reduce
+            the quantity or remove the item to continue.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Cart items */}
         <div className="lg:col-span-2 space-y-4">
-          {cart.map((item) => (
-            <Card
-              key={item.id}
-              className="p-4 flex flex-col sm:flex-row items-center sm:items-start gap-4 border border-fuchsia-100 dark:border-fuchsia-900/40"
-            >
-              <img
-                src={item.images?.[0]?.url || "/placeholder.png"}
-                alt={item.name}
-                className="w-24 h-24 object-cover rounded-md border border-fuchsia-50 dark:border-zinc-800 shrink-0"
-              />
+          {cart.map((item) => {
+            const stock = stockOf(item);
+            const outOfStock = stock !== undefined && stock <= 0;
+            const overStock =
+              stock !== undefined && stock > 0 && item.quantity > stock;
+            const lowStock =
+              stock !== undefined && stock > 0 && stock <= 5 && !overStock;
+            const busy = pendingId === item.id;
 
-              <div className="flex-1 w-full">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    {item.name}
-                  </h3>
-                  <button
-                    onClick={() => removeFromCart(item.id)}
-                    className="text-gray-400 hover:text-red-500 transition-colors shrink-0"
-                    aria-label="Remove item"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+            return (
+              <Card
+                key={item.id}
+                className={`p-4 flex flex-col sm:flex-row items-center sm:items-start gap-4 border ${
+                  outOfStock || overStock
+                    ? "border-red-200 dark:border-red-900/50"
+                    : "border-fuchsia-100 dark:border-fuchsia-900/40"
+                }`}
+              >
+                <img
+                  src={item.images?.[0]?.url || "/placeholder.png"}
+                  alt={item.name}
+                  className="w-24 h-24 object-cover rounded-md border border-fuchsia-50 dark:border-zinc-800 shrink-0"
+                />
 
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                  {formatLKR(item.sellingPrice)} each
-                </p>
-
-                <div className="flex items-center justify-between mt-3">
-                  {/* Quantity stepper */}
-                  <div className="flex items-center border border-fuchsia-200 dark:border-fuchsia-900 rounded-md overflow-hidden">
+                <div className="flex-1 w-full">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                        {item.name}
+                      </h3>
+                      {outOfStock && (
+                        <span className="inline-block mt-1 rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-red-600 dark:bg-red-950/60 dark:text-red-400">
+                          Out of stock
+                        </span>
+                      )}
+                    </div>
                     <button
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                      className="p-2 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950 transition-colors"
-                      aria-label="Decrease quantity"
+                      onClick={() => removeFromCart(item.id)}
+                      className="text-gray-400 hover:text-red-500 transition-colors shrink-0"
+                      aria-label="Remove item"
                     >
-                      <Minus className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="w-8 text-center text-sm font-semibold">
-                      {item.quantity}
-                    </span>
-                    <button
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      className="p-2 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950 transition-colors"
-                      aria-label="Increase quantity"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
 
-                  <p className="font-semibold text-fuchsia-600 dark:text-fuchsia-400">
-                    {formatLKR(item.sellingPrice * item.quantity)}
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    {formatLKR(item.sellingPrice)} each
                   </p>
+
+                  {stock !== undefined && (
+                    <p
+                      className={`mt-1 text-xs font-medium ${
+                        outOfStock || overStock
+                          ? "text-red-500"
+                          : lowStock
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-gray-400 dark:text-gray-500"
+                      }`}
+                    >
+                      {outOfStock
+                        ? "This item is out of stock until it is restocked."
+                        : overStock
+                          ? `Only ${stock} left in stock — reduce the quantity or remove it.`
+                          : lowStock
+                            ? `Only ${stock} left in stock`
+                            : `${stock} in stock`}
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between mt-3">
+                    {/* Quantity stepper */}
+                    <div className="flex items-center border border-fuchsia-200 dark:border-fuchsia-900 rounded-md overflow-hidden">
+                      <button
+                        onClick={() => handleDecrease(item)}
+                        disabled={busy}
+                        className="p-2 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950 transition-colors disabled:opacity-40"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <span className="w-8 text-center text-sm font-semibold">
+                        {busy ? (
+                          <Loader2 className="h-3.5 w-3.5 mx-auto animate-spin" />
+                        ) : (
+                          item.quantity
+                        )}
+                      </span>
+                      <button
+                        onClick={() => handleIncrease(item)}
+                        disabled={
+                          busy ||
+                          outOfStock ||
+                          (stock !== undefined && item.quantity >= stock)
+                        }
+                        className="p-2 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label="Increase quantity"
+                        title={
+                          stock !== undefined && item.quantity >= stock
+                            ? "No more stock available"
+                            : "Increase quantity"
+                        }
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    <p className="font-semibold text-fuchsia-600 dark:text-fuchsia-400">
+                      {formatLKR(item.sellingPrice * item.quantity)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
 
         {/* Order summary */}
@@ -142,11 +290,21 @@ export default function CartPage() {
               </div>
             </div>
 
-            <Link href="/checkout">
-              <Button variant="shoe" className="w-full mt-6">
-                Proceed to Checkout
+            {hasStockIssue ? (
+              <Button variant="shoe" className="w-full mt-6" disabled>
+                Remove out-of-stock items to continue
               </Button>
-            </Link>
+            ) : (
+              <Link href="/checkout">
+                <Button
+                  variant="shoe"
+                  className="w-full mt-6"
+                  disabled={checking}
+                >
+                  {checking ? "Checking stock..." : "Proceed to Checkout"}
+                </Button>
+              </Link>
+            )}
           </Card>
         </div>
       </div>

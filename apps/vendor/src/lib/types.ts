@@ -1,6 +1,23 @@
 export type VendorStatus = "PENDING" | "ACTIVE" | "CANCELLED" | "BLOCKED";
 export type CustomerStatus = "ACTIVE" | "BLOCKED";
 
+export type VariantType = {
+  id: number;
+  name: string;
+  slug: string;
+};
+
+export type VariantValue = {
+  id: number;
+  variantTypeId: number;
+  name: string;
+  hexCode?: string | null;
+  unit?: string | null;
+  status: "active" | "inactive";
+  sortOrder: number;
+  vendorId?: number | null;
+};
+
 /* ── VendorSettings (API response shape) ── */
 export type VendorSettings = {
   id?: number;
@@ -120,6 +137,16 @@ export type Review = {
 
 /* ── Inventory item (API response shape) ──
    Built by /api/inventory from product variants. */
+export type InventoryBatch = {
+  id: number;
+  quantity: number;
+  remaining: number;
+  expiresAt: string | null;
+  batchNumber: string | null;
+  note: string | null;
+  createdAt: string;
+};
+
 export type InventoryItem = {
   id: number;
   sku: string | null;
@@ -127,6 +154,8 @@ export type InventoryItem = {
   attributes: { type: string; value: string; hexCode: string | null }[];
   stock: number;
   priceOverride: number | null;
+  batches: InventoryBatch[];
+  nearestExpiry: string | null;
 };
 
 /* ── Payout (API response shape) ──
@@ -157,6 +186,7 @@ export type Offer = {
   ctaText: string;
   ctaLink?: string | null;
   products?: { id: number; productId: number; product: { id: number; name: string } }[];
+  basis?: string | null;
   sortOrder: number;
   showOnLanding: boolean;
   approvalStatus: OfferApprovalStatus;

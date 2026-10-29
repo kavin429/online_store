@@ -12,6 +12,13 @@ import {
 import { Input } from "@online-store/ui/input";
 import { Textarea } from "@online-store/ui/textarea";
 import { Switch } from "@online-store/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@online-store/ui/select";
 import { Upload, X } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
 import type { VariantType } from "@/lib/types";
@@ -144,79 +151,96 @@ export default function Step1({ form, previews, setPreviews }: Step1Props) {
   return (
     <Form {...form}>
       <form className="space-y-6">
-
-
-        <div className="flex gap-4">
-          {/* Category Dropdown */}
+        {/* Stacked on mobile, side by side from sm up */}
+        <div className="flex flex-col gap-4 sm:flex-row">
+          {/* Category Select */}
           <FormField
             control={form.control}
             name="categoryId"
             render={({ field }) => (
-              <FormItem className="flex-1">
-                <FormLabel>Category</FormLabel>
-                <FormControl>
-                  <select
-                    {...field}
-                    onChange={(e) => {
-                      const rawVal = e.target.value;
-                      const numVal = rawVal ? Number(rawVal) : null;
-                      setSelectedCategory(numVal);
-                      field.onChange(rawVal);
-                      form.setValue("subcategoryId", "");
-                      form.setValue("variantTypeIds", []);
-                      setAvailableVariantTypes([]);
-                    }}
-                    className="border rounded p-2 w-full"
-                  >
-                    <option value="">Select category</option>
+              <FormItem className="w-full flex-1">
+                <FormLabel className="text-fuchsia-900 dark:text-fuchsia-200">
+                  Category
+                </FormLabel>
+                <Select
+                  name={field.name}
+                  value={field.value ? String(field.value) : ""}
+                  onValueChange={(rawVal) => {
+                    const numVal = rawVal ? Number(rawVal) : null;
+                    setSelectedCategory(numVal);
+                    field.onChange(rawVal);
+                    form.setValue("subcategoryId", "");
+                    form.setValue("variantTypeIds", []);
+                    setAvailableVariantTypes([]);
+                  }}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
                     {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
+                      <SelectItem key={cat.id} value={String(cat.id)}>
                         {cat.name}
-                      </option>
+                      </SelectItem>
                     ))}
-                  </select>
-                </FormControl>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {/* Subcategory Dropdown */}
+          {/* Subcategory Select */}
           <FormField
             control={form.control}
             name="subcategoryId"
             render={({ field }) => (
-              <FormItem className="flex-1">
-                <FormLabel>Subcategory</FormLabel>
-                <FormControl>
-                  <select
-                    {...field}
-                    onChange={(e) => handleSubcategoryChange(e.target.value)}
-                    className="border rounded p-2 w-full"
-                    disabled={!selectedCategory || loadingSubcategories}
-                  >
-                    <option value="">
-                      {loadingSubcategories ? "Loading..." : "Select subcategory"}
-                    </option>
+              <FormItem className="w-full flex-1">
+                <FormLabel className="text-fuchsia-900 dark:text-fuchsia-200">
+                  Subcategory
+                </FormLabel>
+                <Select
+                  name={field.name}
+                  value={field.value ? String(field.value) : ""}
+                  onValueChange={handleSubcategoryChange}
+                  disabled={!selectedCategory || loadingSubcategories}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          loadingSubcategories
+                            ? "Loading..."
+                            : "Select subcategory"
+                        }
+                      />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
                     {subcategories.map((sub) => (
-                      <option key={sub.id} value={sub.id}>
+                      <SelectItem key={sub.id} value={String(sub.id)}>
                         {sub.name}
-                      </option>
+                      </SelectItem>
                     ))}
-                  </select>
-                </FormControl>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
+
         {/* Product Name */}
         <FormField
           control={form.control}
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Product Name</FormLabel>
+              <FormLabel className="text-fuchsia-900 dark:text-fuchsia-200">
+                Product Name
+              </FormLabel>
               <FormControl>
                 <Input {...field} placeholder="Enter product name" />
               </FormControl>
@@ -224,36 +248,44 @@ export default function Step1({ form, previews, setPreviews }: Step1Props) {
             </FormItem>
           )}
         />
+
+        {/* Variants */}
         <FormField
           control={form.control}
           name="variantTypeIds"
           render={({ field }) => (
             <FormItem className="flex-1">
-              <FormLabel>Available Variants</FormLabel>
+              <FormLabel className="text-fuchsia-900 dark:text-fuchsia-200">
+                Available Variants
+              </FormLabel>
               <FormControl>
-                <div className="flex gap-4 flex-wrap border rounded p-3">
+                <div className="flex flex-wrap gap-3 rounded-md border border-fuchsia-200 bg-fuchsia-50/40 p-3 sm:gap-4 dark:border-fuchsia-900/50 dark:bg-fuchsia-950/10">
                   {!selectedCategory && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-fuchsia-700/70 dark:text-fuchsia-300/70">
                       Select a category and subcategory first.
                     </p>
                   )}
                   {selectedCategory && !form.getValues("subcategoryId") && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-fuchsia-700/70 dark:text-fuchsia-300/70">
                       Select a subcategory to see its available variants.
                     </p>
                   )}
                   {selectedCategory &&
                     form.getValues("subcategoryId") &&
                     availableVariantTypes.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-fuchsia-700/70 dark:text-fuchsia-300/70">
                         This subcategory has no variant types configured.
                       </p>
                     )}
                   {availableVariantTypes.map((variantType) => (
-                    <label key={variantType.id} className="flex items-center gap-2">
+                    <label
+                      key={variantType.id}
+                      className="flex cursor-pointer items-center gap-2 text-sm"
+                    >
                       <input
                         type="checkbox"
                         value={variantType.id}
+                        className="h-4 w-4 accent-fuchsia-600"
                         checked={field.value?.map(Number).includes(Number(variantType.id))}
                         onChange={(e) => {
                           const checked = e.target.checked;
@@ -274,17 +306,21 @@ export default function Step1({ form, previews, setPreviews }: Step1Props) {
             </FormItem>
           )}
         />
+
         {/* Featured Switch */}
         <FormField
           control={form.control}
           name="featured"
           render={({ field }) => (
-            <FormItem className="flex items-center justify-between border p-3 rounded">
-              <FormLabel>Featured Product</FormLabel>
+            <FormItem className="flex items-center justify-between gap-3 rounded-md border border-fuchsia-200 p-3 dark:border-fuchsia-900/50">
+              <FormLabel className="text-fuchsia-900 dark:text-fuchsia-200">
+                Featured Product
+              </FormLabel>
               <FormControl>
                 <Switch
                   checked={field.value}
                   onCheckedChange={field.onChange}
+                  className="data-[state=checked]:bg-fuchsia-600"
                 />
               </FormControl>
             </FormItem>
@@ -297,16 +333,20 @@ export default function Step1({ form, previews, setPreviews }: Step1Props) {
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel className="text-fuchsia-900 dark:text-fuchsia-200">
+                Description
+              </FormLabel>
               <FormControl>
-                <Textarea {...field} placeholder="Enter product description" />
+                <Textarea
+                  {...field}
+                  placeholder="Enter product description"
+                  className="border-fuchsia-200 text-base placeholder:text-fuchsia-400 hover:border-fuchsia-300 focus-visible:border-fuchsia-500 focus-visible:ring-1 focus-visible:ring-fuchsia-500 sm:text-sm dark:border-fuchsia-900/50"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-
-
 
         {/* Images */}
         <FormField
@@ -314,7 +354,9 @@ export default function Step1({ form, previews, setPreviews }: Step1Props) {
           name="images"
           render={() => (
             <FormItem>
-              <FormLabel>Product Images</FormLabel>
+              <FormLabel className="text-fuchsia-900 dark:text-fuchsia-200">
+                Product Images
+              </FormLabel>
               <div className="flex flex-col gap-2">
                 <input
                   type="file"
@@ -326,33 +368,33 @@ export default function Step1({ form, previews, setPreviews }: Step1Props) {
                 />
                 <label
                   htmlFor="product-images"
-                  className="flex items-center justify-center cursor-pointer border border-dashed p-4 rounded hover:bg-gray-100 dark:hover:bg-gray-900"
+                  className="flex cursor-pointer items-center justify-center rounded-md border border-dashed border-fuchsia-300 p-4 text-sm text-fuchsia-700 transition-colors hover:bg-fuchsia-50 dark:border-fuchsia-800 dark:text-fuchsia-300 dark:hover:bg-fuchsia-950/30"
                 >
-                  <Upload className="mr-2 w-5 h-5" /> Upload Images
+                  <Upload className="mr-2 h-5 w-5 text-fuchsia-500" /> Upload Images
                 </label>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
                 {previews.map((src, i) => (
                   <div
                     key={i}
-                    className="relative border rounded-lg overflow-hidden group"
+                    className="group relative overflow-hidden rounded-lg border border-fuchsia-200 dark:border-fuchsia-900/50"
                   >
                     <img
                       src={src}
                       alt={`Preview ${i}`}
-                      className="w-full h-32 object-cover"
+                      className="h-28 w-full object-cover sm:h-32"
                     />
 
                     {/* Image Number */}
-                    <div className="absolute top-1 left-1 bg-black/60 text-white text-xs px-2 py-1 rounded">
+                    <div className="absolute left-1 top-1 rounded bg-fuchsia-700/80 px-2 py-1 text-xs text-white">
                       {i + 1}
                     </div>
 
-                    {/* Remove Button */}
+                    {/* Remove Button: always visible on touch screens, hover on larger */}
                     <button
                       type="button"
                       onClick={() => removeImage(i)}
-                      className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                      className="absolute right-1 top-1 rounded-full bg-red-500 p-1 text-white transition hover:bg-red-600 sm:opacity-0 sm:group-hover:opacity-100"
                     >
                       <X size={14} />
                     </button>

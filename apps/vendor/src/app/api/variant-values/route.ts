@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 // GET - list all variant values (optionally filtered by variantTypeId)
 export async function GET(req: Request) {
@@ -16,6 +17,10 @@ export async function GET(req: Request) {
 
 // POST - create a new variant value
 export async function POST(req: Request) {
+  const cookieStore = cookies();
+  const vendorSessionRaw = cookieStore.get("vendor_session")?.value;
+  const vendorId = vendorSessionRaw ? JSON.parse(vendorSessionRaw)?.id ?? null : null;
+
   const body = await req.json();
 
   if (!body.name || !body.variantTypeId) {
@@ -33,6 +38,7 @@ export async function POST(req: Request) {
       variantTypeId: Number(body.variantTypeId),
       sortOrder: body.sortOrder ?? 0,
       status: body.status ?? "active",
+      vendorId,
     },
   });
 

@@ -168,13 +168,13 @@ export default function GrowMoreFooter() {
       </div>
 
       {/* ── Main Footer ── */}
-      <footer className="bg-white dark:bg-zinc-950 px-8">
+      <footer className="bg-white dark:bg-zinc-950 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1100px] mx-auto">
 
           {/* Grid */}
           <div
-            className="grid gap-10 pt-[10px] pb-12"
-            style={{ gridTemplateColumns: "2.2fr 1fr 1fr 1fr 1.5fr" }}
+            className="grid gap-8 sm:gap-10 pt-[10px] pb-10 sm:pb-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5"
+            style={{ gridTemplateColumns: undefined }}
           >
 
             {/* ── Brand ── */}
@@ -289,7 +289,7 @@ export default function GrowMoreFooter() {
           {/* ── App Strip ── */}
           <div
             ref={appFade.ref}
-            className="rounded-[12px] border border-fuchsia-100 dark:border-fuchsia-900 bg-fuchsia-50 dark:bg-fuchsia-950 px-6 py-4 flex items-center justify-between gap-4 mb-7 flex-wrap"
+            className="rounded-[12px] border border-fuchsia-100 dark:border-fuchsia-900 bg-fuchsia-50 dark:bg-fuchsia-950 px-4 sm:px-6 py-4 flex items-center justify-between gap-4 mb-7 flex-col sm:flex-row flex-wrap text-center sm:text-left"
             style={{
               opacity: appFade.visible ? 1 : 0,
               transform: appFade.visible ? "translateY(0)" : "translateY(16px)",
@@ -322,7 +322,7 @@ export default function GrowMoreFooter() {
           </div>
 
           {/* ── Divider wave into bottom bar ── */}
-          <div className="leading-none -mx-8 overflow-hidden">
+          <div className="leading-none -mx-4 sm:-mx-6 lg:-mx-8 overflow-hidden">
             <svg viewBox="0 0 1440 18" preserveAspectRatio="none" className="w-full h-[18px] block">
               <path
                 d="M0,9 C360,18 720,0 1080,10 C1260,14 1380,5 1440,9 L1440,18 L0,18 Z"
@@ -335,7 +335,7 @@ export default function GrowMoreFooter() {
           {/* ── Bottom Bar ── */}
           <div
             ref={bottomFade.ref}
-            className="bg-gray-50 dark:bg-zinc-900 -mx-8 px-8 py-[14px] flex items-center justify-between flex-wrap gap-3"
+            className="bg-gray-50 dark:bg-zinc-900 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-[14px] flex flex-col sm:flex-row items-center justify-between flex-wrap gap-3 text-center sm:text-left"
             style={{
               opacity: bottomFade.visible ? 1 : 0,
               transition: "opacity 0.5s 0.4s ease",
@@ -344,7 +344,7 @@ export default function GrowMoreFooter() {
             <span className="text-[11px] text-gray-400 dark:text-gray-500">
               © {new Date().getFullYear()} GrowMore Technologies Pvt. Ltd. All rights reserved.
             </span>
-            <div className="flex flex-wrap gap-5">
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-5">
               {legalLinks.map(({ icon, label }) => (
                 <a
                   key={label}

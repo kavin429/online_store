@@ -21,11 +21,11 @@ export default async function DashboardLayout({
   };
 
   return (
-    <section>
+    <section className="flex h-screen flex-col overflow-hidden">
       <TopNav user={user} />
-      <div className="flex min-h-screen">
+      <div className="flex flex-1 overflow-hidden">
         <SideNav />
-        <div className="flex-1 min-w-0 pt-4 pb-24 md:py-4 px-4">{children}</div>
+        <div className="flex-1 min-w-0 overflow-y-auto pt-4 pb-24 md:py-4 px-4">{children}</div>
       </div>
     </section>
   );

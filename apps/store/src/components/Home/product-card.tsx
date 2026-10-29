@@ -6,6 +6,7 @@ import { Star, Heart } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { useCart } from "@/context/addToCard";
 import { useWishlist } from "@/context/favorite";
 import AuthRequiredDialog from "@/components/misc/authRequiredDialog";
@@ -18,6 +19,7 @@ interface Product {
   sellingPrice: number;
   costPrice: number;
   featured: boolean;
+  stock?: number;
   images: {
     id: number;
     url: string;
@@ -62,7 +64,14 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   const handleAddToCart = (product: Product) => {
-    requireAuth(() => addToCart(product));
+    requireAuth(() => {
+      const result = addToCart(product);
+      if (!result.ok) {
+        toast.error(result.message ?? "Could not add to cart");
+      } else if (result.message) {
+        toast.warning(result.message);
+      }
+    });
   };
 
   const handleWishlistToggle = (product: Product) => {
@@ -160,11 +169,15 @@ export default function ProductCard({ product }: ProductCardProps) {
             {/* Add to cart bar — spans the full card width, under the label too */}
             <Button
               onClick={() => handleAddToCart(product)}
-              disabled={isInCart(product.id)}
+              disabled={isInCart(product.id) || (product.stock ?? 1) <= 0}
               variant="shoe"
               className="w-full rounded-none text-xs sm:text-sm py-2 sm:py-2.5"
             >
-              {isInCart(product.id) ? "In Cart" : "Add to Cart"}
+              {product.stock !== undefined && product.stock <= 0
+                ? "Out of Stock"
+                : isInCart(product.id)
+                  ? "In Cart"
+                  : "Add to Cart"}
             </Button>
       </Card>
 

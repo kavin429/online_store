@@ -7,16 +7,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@online-store/ui/sheet";
-import { Badge } from "@online-store/ui/badge";
-import {
-  Ban,
-  CheckCircle2,
-  Package,
-  Wallet,
-  Store,
-  Bell,
-} from "lucide-react";
+import { Package, Wallet, Store, Bell } from "lucide-react";
 import type { Vendor } from "./column";
+import StatusBadge from "@/components/comman/status-badge";
 
 type VendorDetailsSheetProps = {
   vendor: Vendor | null;
@@ -81,29 +74,22 @@ export default function VendorDetailsSheet({
                 {settings?.storeName || "Store not set up"}
               </p>
               <div className="mt-1">
-                {vendor.status === "BLOCKED" ? (
-                  <Badge className="gap-1 bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90">
-                    <Ban className="w-3 h-3" /> Blocked
-                  </Badge>
-                ) : (
-                  <Badge className="gap-1 bg-green-600 hover:bg-green-600">
-                    <CheckCircle2 className="w-3 h-3" /> Active
-                  </Badge>
-                )}
+                <StatusBadge status={vendor.status.toLowerCase() as any} />
               </div>
             </div>
           </div>
 
-          {/* Block reason */}
-          {vendor.status === "BLOCKED" && (
+          {/* Block/Cancel reason */}
+          {(vendor.status === "BLOCKED" || vendor.status === "CANCELLED") && (
             <div className="rounded-md border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 p-3 space-y-1">
               <p className="text-xs font-medium text-red-600 dark:text-red-400">
-                Block reason
+                {vendor.status === "BLOCKED" ? "Block reason" : "Rejection reason"}
               </p>
               <p className="text-sm">{vendor.blockReason || "No reason provided"}</p>
               {vendor.blockedAt && (
                 <p className="text-xs text-muted-foreground">
-                  Blocked on {new Date(vendor.blockedAt).toLocaleDateString()}
+                  {vendor.status === "BLOCKED" ? "Blocked" : "Rejected"} on{" "}
+                  {new Date(vendor.blockedAt).toLocaleDateString()}
                 </p>
               )}
             </div>

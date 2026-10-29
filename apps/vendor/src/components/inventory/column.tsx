@@ -1,9 +1,10 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, AlertTriangle } from "lucide-react";
+import { ArrowUpDown, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@online-store/ui/button";
 import type { InventoryItem } from "@/lib/types";
+import { expiryStatus, formatExpiry } from "@/lib/expiry";
 
 export { type InventoryItem };
 
@@ -60,6 +61,40 @@ export function columns(onRestock: (item: InventoryItem) => void): ColumnDef<Inv
               {stock}
             </span>
             {stock < 10 && <AlertTriangle size={14} className="text-amber-500" />}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "nearestExpiry",
+      header: ({ column }) => (
+        <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+          Expiry <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const batches = row.original.batches || [];
+        if (batches.length === 0) {
+          return <span className="text-xs text-muted-foreground">No batches</span>;
+        }
+        const nearest = row.original.nearestExpiry;
+        const { status, label } = expiryStatus(nearest);
+        if (status === "none") {
+          return <span className="text-xs text-muted-foreground">No expiry</span>;
+        }
+        const tone =
+          status === "expired"
+            ? "text-red-600 dark:text-red-400"
+            : status === "soon"
+              ? "text-amber-600 dark:text-amber-400"
+              : "text-muted-foreground";
+        return (
+          <div className={`flex flex-col text-xs ${tone}`}>
+            <span className="flex items-center gap-1 font-medium">
+              {(status === "expired" || status === "soon") && <Clock size={12} />}
+              {formatExpiry(nearest)}
+            </span>
+            <span>{label}</span>
           </div>
         );
       },

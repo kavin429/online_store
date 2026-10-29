@@ -88,6 +88,7 @@ model Vendor {
   notifications  Notification[]
   promos         Promo[]
   offers         Offer[]
+  variantValues  VariantValue[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -219,6 +220,7 @@ model ProductVariant {
   values ProductVariantValue[]
 
   inventoryLogs InventoryLog[]
+  batches       InventoryBatch[]
 
   createdAt DateTime @default(now())
 }
@@ -258,6 +260,9 @@ model VariantValue {
   unit      String?
   status    VariantStatus @default(active)
   sortOrder Int           @default(0)
+
+  vendorId Int?
+  vendor   Vendor? @relation(fields: [vendorId], references: [id], onDelete: SetNull)
 
   productVariants ProductVariantValue[]
 
@@ -726,6 +731,25 @@ model InventoryLog {
   note   String?
 
   createdAt DateTime @default(now())
+}
+
+// One row per restock ("lot") of a variant. FIFO consumes the batch with the
+// earliest expiry first, then the oldest received batch.
+model InventoryBatch {
+  id Int @id @default(autoincrement())
+
+  productVariantId Int
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Cascade)
+
+  quantity  Int  // quantity received
+  remaining Int  // quantity still on hand, reduced by FIFO sales
+  expiresAt DateTime?
+  batchNumber String?
+  note      String?
+
+  createdAt DateTime @default(now())
+
+  @@index([productVariantId, expiresAt])
 }
 
 // ═══════════════════════════════════════════════════════════════

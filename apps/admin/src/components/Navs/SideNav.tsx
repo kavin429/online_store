@@ -117,7 +117,7 @@ const SideNav: NextPage<SideNavProps> = ({ className }) => {
   return (
     <div
       className={cn(
-        "sticky top-20 mb-4 flex h-[calc(100vh-7rem)] shrink-0 flex-col overflow-hidden rounded-lg border",
+        "flex h-full shrink-0 flex-col overflow-hidden rounded-lg border",
         "border-zinc-200 bg-white dark:border-neutral-800 dark:bg-neutral-950",
         "transition-all duration-300",
         // 208px expanded (was 256) so it no longer overlaps the page content

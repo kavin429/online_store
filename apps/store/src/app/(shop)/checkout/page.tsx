@@ -36,6 +36,7 @@ export default function CheckoutPage() {
 
   const [isPlacing, setIsPlacing] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [orderError, setOrderError] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [form, setForm] = useState<FormData>(emptyForm);
 
@@ -148,6 +149,7 @@ export default function CheckoutPage() {
     if (!validate()) return;
 
     setIsPlacing(true);
+    setOrderError("");
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
@@ -167,7 +169,7 @@ export default function CheckoutPage() {
 
       if (!res.ok) {
         console.error("ORDER ERROR:", data.error);
-        setErrors((prev) => ({ ...prev, fullName: data.error || "Failed to place order" }));
+        setOrderError(data.error || "Failed to place order");
         return;
       }
 
@@ -175,6 +177,7 @@ export default function CheckoutPage() {
       router.push("/order-success");
     } catch (err) {
       console.error("ORDER PLACEMENT ERROR:", err);
+      setOrderError("Failed to place order. Please try again.");
     } finally {
       setIsPlacing(false);
     }
@@ -474,6 +477,12 @@ export default function CheckoutPage() {
                 <span>{formatLKR(total)}</span>
               </div>
             </div>
+
+            {orderError && (
+              <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-400">
+                {orderError}
+              </p>
+            )}
 
             <Button
               variant="shoe"

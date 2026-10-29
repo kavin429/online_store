@@ -519,15 +519,15 @@ export default function ComplexNavbar() {
     <div className="fixed top-0 left-0 w-full z-50">
 
       {/* ── TOP NAVBAR ── */}
-      <div className="bg-white dark:bg-zinc-950 border-b border-fuchsia-100 dark:border-fuchsia-900/40 shadow-sm shadow-fuchsia-50 dark:shadow-none px-4">
-        <div className="max-w-7xl mx-auto flex items-center gap-4 py-3">
+      <div className="bg-white dark:bg-zinc-950 border-b border-fuchsia-100 dark:border-fuchsia-900/40 shadow-sm shadow-fuchsia-50 dark:shadow-none px-3 sm:px-4">
+        <div className="max-w-7xl mx-auto flex items-center gap-2 sm:gap-3 md:gap-4 py-2 sm:py-3">
 
           {/* LOGO */}
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <div className="w-8 h-8 rounded-[9px] bg-gradient-to-br from-fuchsia-600 to-fuchsia-900 flex items-center justify-center shadow-[0_2px_8px_rgba(192,36,237,0.3)]">
-              <Leaf size={15} className="text-fuchsia-100" />
+          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-[9px] bg-gradient-to-br from-fuchsia-600 to-fuchsia-900 flex items-center justify-center shadow-[0_2px_8px_rgba(192,36,237,0.3)]">
+              <Leaf size={14} className="text-fuchsia-100 sm:w-[15px] sm:h-[15px]" />
             </div>
-            <span className="text-[20px] font-extrabold tracking-tight text-gray-900 dark:text-white">
+            <span className="text-[18px] sm:text-[20px] font-extrabold tracking-tight text-gray-900 dark:text-white">
               Grow<span className="text-fuchsia-500">More</span>
             </span>
           </Link>
@@ -563,10 +563,10 @@ export default function ComplexNavbar() {
           {/* MOBILE MENU TOGGLE */}
           <Button
             size="icon"
-            className="lg:hidden ml-auto rounded-full bg-fuchsia-500 hover:bg-fuchsia-600 text-white shadow-sm"
+            className="lg:hidden ml-auto rounded-full bg-fuchsia-500 hover:bg-fuchsia-600 text-white shadow-sm h-8 w-8 sm:h-9 sm:w-9"
             onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
           >
-            {isMobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {isMobileNavOpen ? <X className="h-4 w-4 sm:h-5 sm:w-5" /> : <Menu className="h-4 w-4 sm:h-5 sm:w-5" />}
           </Button>
         </div>
       </div>
@@ -577,7 +577,7 @@ export default function ComplexNavbar() {
       {/* ── MOBILE PANEL ── */}
       {isMobileNavOpen && (
         <div className="lg:hidden bg-white dark:bg-zinc-950 border-b border-fuchsia-100 dark:border-fuchsia-900/40 shadow-lg">
-          <div className="p-4 flex flex-col gap-4">
+          <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
 
             {/* Search */}
             <div className="relative">
@@ -593,7 +593,7 @@ export default function ComplexNavbar() {
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <CategoryDropdown />
               <CartPreviewDropdown cart={cart} />
               <WishlistPreviewDropdown wishlist={wishlist} removeFromWishlist={removeFromWishlist} />

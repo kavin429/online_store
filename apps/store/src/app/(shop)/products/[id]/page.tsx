@@ -34,6 +34,12 @@ interface Product {
   sellingPrice: number;
   costPrice: number;
   featured: boolean;
+  stock?: number;
+  variants?: {
+    id: number;
+    stock: number;
+    values: { variantValueId: number }[];
+  }[];
   images: { id: number; url: string }[];
   category: { id: number; name: string };
   variantTypes?: VariantType[];
@@ -114,6 +120,34 @@ export default function ProductDetailsPage() {
     fetchRelated();
   }, [product?.category?.id, product?.id]);
 
+  const findSelectedVariant = (p: Product) => {
+    const selectedIds = Object.values(selectedVariants);
+    if (selectedIds.length === 0) return null;
+
+    return (
+      (p.variants ?? []).find((variant) => {
+        const ids = variant.values?.map((value) => value.variantValueId) ?? [];
+        return (
+          selectedIds.every((id) => ids.includes(id)) &&
+          ids.every((id) => selectedIds.includes(id))
+        );
+      }) ?? null
+    );
+  };
+
+  const getAvailableStock = (p: Product) => {
+    const variant = findSelectedVariant(p);
+    return Math.max(0, variant ? variant.stock : p.stock ?? 0);
+  };
+
+  const availableStock = product ? getAvailableStock(product) : 0;
+
+  // Keep the quantity inside the currently available stock (e.g. when the
+  // shopper switches to a variant with fewer units left).
+  useEffect(() => {
+    setQuantity((q) => Math.max(1, Math.min(q, availableStock)));
+  }, [availableStock]);
+
   const requireAuth = (action: () => void) => {
     if (!session) {
       setAuthDialogOpen(true);
@@ -124,8 +158,29 @@ export default function ProductDetailsPage() {
 
   const handleAddToCart = (p: Product) => {
     requireAuth(() => {
-      addToCart({ ...p, quantity, selectedVariants });
-      toast.success("Added to cart");
+      const stock = getAvailableStock(p);
+
+      if (stock <= 0) {
+        toast.error("This product is out of stock");
+        return;
+      }
+
+      const variant = findSelectedVariant(p);
+      const result = addToCart({
+        ...p,
+        quantity: Math.min(quantity, stock),
+        stock,
+        variantId: variant?.id ?? null,
+        selectedVariants,
+      });
+
+      if (!result.ok) {
+        toast.error(result.message ?? "Could not add to cart");
+      } else if (result.message) {
+        toast.warning(result.message);
+      } else {
+        toast.success("Added to cart");
+      }
     });
   };
 
@@ -140,7 +195,8 @@ export default function ProductDetailsPage() {
   };
 
   const decreaseQuantity = () => setQuantity((q) => Math.max(1, q - 1));
-  const increaseQuantity = () => setQuantity((q) => q + 1);
+  const increaseQuantity = () =>
+    setQuantity((q) => Math.min(Math.max(1, availableStock), q + 1));
 
   const selectVariantValue = (variantTypeId: number, variantValueId: number) => {
     setSelectedVariants((prev) => ({ ...prev, [variantTypeId]: variantValueId }));
@@ -163,6 +219,7 @@ export default function ProductDetailsPage() {
 
   const variantTypes = product.variantTypes || [];
   const inCart = isInCart(product.id);
+  const outOfStock = availableStock <= 0;
 
   return (
     <div className="max-w-7xl mx-auto p-5 my-20">
@@ -279,13 +336,28 @@ export default function ProductDetailsPage() {
               <p className="text-4xl font-bold">LKR {product.sellingPrice}</p>
             </div>
 
+            {/* Live stock */}
+            {outOfStock ? (
+              <p className="text-sm font-semibold text-red-500">
+                Out of stock — check back after it is restocked
+              </p>
+            ) : availableStock <= 5 ? (
+              <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                Only {availableStock} left in stock
+              </p>
+            ) : (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                {availableStock} in stock
+              </p>
+            )}
+
             {/* Buttons */}
             <div className="flex flex-wrap gap-4 pt-4">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center border border-zinc-200 dark:border-zinc-800 rounded-md w-fit">
                   <Button
                     onClick={decreaseQuantity}
-                    disabled={quantity <= 1}
+                    disabled={quantity <= 1 || outOfStock}
                     className="rounded-r-none"
                     variant="shoesecondary"
                     size="sm"
@@ -297,6 +369,7 @@ export default function ProductDetailsPage() {
                   </span>
                   <Button
                     onClick={increaseQuantity}
+                    disabled={outOfStock || quantity >= availableStock}
                     variant="shoesecondary"
                     className="rounded-l-none"
                     size="sm"
@@ -310,10 +383,10 @@ export default function ProductDetailsPage() {
                 size="sm"
                 variant="shoe"
                 onClick={() => handleAddToCart(product)}
-                disabled={inCart}
+                disabled={inCart || outOfStock}
               >
                 <ShoppingCart className="mr-2 h-4 w-4" />
-                {inCart ? "In Cart" : "Add To Cart"}
+                {outOfStock ? "Out of Stock" : inCart ? "In Cart" : "Add To Cart"}
               </Button>
 
               <Button

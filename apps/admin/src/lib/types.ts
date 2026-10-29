@@ -6,7 +6,7 @@ import type { VariantType, VariantValue } from "@online-store/db";
 export type { VariantType, VariantValue };
 
 export type UserStatus = "ACTIVE" | "BLOCKED";
-export type VendorStatus = UserStatus;
+export type VendorStatus = "ACTIVE" | "BLOCKED" | "PENDING" | "CANCELLED";
 export type CustomerStatus = UserStatus;
 
 export type VendorSettings = {

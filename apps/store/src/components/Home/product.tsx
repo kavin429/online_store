@@ -6,6 +6,7 @@ import { Star, Heart } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { useCart } from "@/context/addToCard";
 import { useWishlist } from "@/context/favorite";
 import AuthRequiredDialog from "@/components/misc/authRequiredDialog";
@@ -18,6 +19,7 @@ interface Product {
   sellingPrice: number;
   costPrice: number;
   featured: boolean;
+  stock?: number;
   images: {
     id: number;
     url: string;
@@ -87,7 +89,14 @@ export default function ProductCard() {
   };
 
   const handleAddToCart = (product: Product) => {
-    requireAuth(() => addToCart(product));
+    requireAuth(() => {
+      const result = addToCart(product);
+      if (!result.ok) {
+        toast.error(result.message ?? "Could not add to cart");
+      } else if (result.message) {
+        toast.warning(result.message);
+      }
+    });
   };
 
   const handleWishlistToggle = (product: Product) => {
@@ -100,7 +109,7 @@ export default function ProductCard() {
 
   return (
     <>
-      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-5 lg:gap-8 p-5 sm:p-7">
+      <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-5 lg:gap-6 xl:gap-8 p-3 sm:p-5 lg:p-7">
         {products.map((product) => (
           <Card
             key={product.id}
@@ -188,11 +197,15 @@ export default function ProductCard() {
             {/* Add to cart bar — spans the full card width, under the label too */}
             <Button
               onClick={() => handleAddToCart(product)}
-              disabled={isInCart(product.id)}
+              disabled={isInCart(product.id) || (product.stock ?? 1) <= 0}
               variant="shoe"
-              className="w-full rounded-none text-xs sm:text-sm py-2 sm:py-2.5"
+              className="w-full rounded-none text-[11px] sm:text-xs md:text-sm py-1.5 sm:py-2 md:py-2.5"
             >
-              {isInCart(product.id) ? "In Cart" : "Add to Cart"}
+              {product.stock !== undefined && product.stock <= 0
+                ? "Out of Stock"
+                : isInCart(product.id)
+                  ? "In Cart"
+                  : "Add to Cart"}
             </Button>
           </Card>
         ))}

@@ -17,29 +17,25 @@ import {
 
 import {
   LayoutGrid,
-  Tag,
   Package,
-  Users,
   ShoppingBag,
   LogOut,
-  Store,
   List,
   PlusCircle,
   SlidersHorizontal,
-  BarChart3,
   DollarSign,
   Star,
   Settings,
   Truck,
   RotateCcw,
-  Bell,
   ClipboardList,
   BadgePercent,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
 
 interface SideNavProps {
   className?: string;
-  role?: "admin" | "vendor";
 }
 
 interface SidebarSubItem {
@@ -53,114 +49,68 @@ interface SidebarItem {
   icon: ReactElement;
   path?: string;
   subItems?: SidebarSubItem[];
-  vendorHidden?: boolean;
 }
 
 const sidebarItems: SidebarItem[] = [
-  { title: "Dashboard", icon: <LayoutGrid size={20} />, path: "/dashboard/overview" },
-
-  {
-    title: "Categories",
-    icon: <Tag size={20} />,
-    path: "/dashboard/categories",
-    vendorHidden: true,
-  },
-
+  { title: "Dashboard", icon: <LayoutGrid size={18} />, path: "/dashboard/overview" },
   {
     title: "Products",
-    icon: <Package size={20} />,
+    icon: <Package size={18} />,
     subItems: [
-      { title: "Create Product", icon: <PlusCircle size={16} />, path: "/dashboard/products/add" },
-      { title: "All Products", icon: <List size={16} />, path: "/dashboard/products/list" },
+      { title: "Product Variants", icon: <SlidersHorizontal size={14} />, path: "/dashboard/variant" },
+      { title: "Create Product", icon: <PlusCircle size={14} />, path: "/dashboard/products/add" },
+      { title: "All Products", icon: <List size={14} />, path: "/dashboard/products/list" },
     ],
   },
-
-  {
-    title: "Inventory",
-    icon: <ClipboardList size={20} />,
-    path: "/dashboard/inventory",
-  },
-
-  {
-    title: "Offers",
-    icon: <BadgePercent size={20} />,
-    path: "/dashboard/offers",
-  },
-
-  {
-    title: "Orders",
-    icon: <ShoppingBag size={20} />,
-    path: "/dashboard/orders",
-  },
-
-  {
-    title: "Returns",
-    icon: <RotateCcw size={20} />,
-    path: "/dashboard/returns",
-  },
-
-  {
-    title: "Reviews",
-    icon: <Star size={20} />,
-    path: "/dashboard/reviews",
-  },
-
-  {
-    title: "Payouts",
-    icon: <DollarSign size={20} />,
-    path: "/dashboard/payouts",
-  },
-
-  {
-    title: "Shipping",
-    icon: <Truck size={20} />,
-    path: "/dashboard/shipping",
-  },
-
-  {
-    title: "Settings",
-    icon: <Settings size={20} />,
-    path: "/dashboard/settings",
-  },
-
-  {
-    title: "Vendors",
-    icon: <Users size={20} />,
-    path: "/dashboard/vendors",
-    vendorHidden: true,
-  },
-
-  {
-    title: "Stores",
-    icon: <Store size={20} />,
-    subItems: [
-      { title: "All Stores", icon: <List size={16} />, path: "/dashboard/stores" },
-      { title: "Add Store", icon: <PlusCircle size={16} />, path: "/dashboard/stores/add" },
-    ],
-    vendorHidden: true,
-  },
-  {
-    title: "Customers",
-    icon: <Users size={20} />,
-    path: "/dashboard/customers",
-    vendorHidden: true,
-  },
-
-  {
-    title: "Logout",
-    icon: <LogOut size={20} />,
-  },
+  { title: "Inventory", icon: <ClipboardList size={18} />, path: "/dashboard/inventory" },
+  { title: "Offers", icon: <BadgePercent size={18} />, path: "/dashboard/offers" },
+  { title: "Orders", icon: <ShoppingBag size={18} />, path: "/dashboard/orders" },
+  { title: "Returns", icon: <RotateCcw size={18} />, path: "/dashboard/returns" },
+  { title: "Reviews", icon: <Star size={18} />, path: "/dashboard/reviews" },
+  { title: "Payouts", icon: <DollarSign size={18} />, path: "/dashboard/payouts" },
+  { title: "Shipping", icon: <Truck size={18} />, path: "/dashboard/shipping" },
+  { title: "Settings", icon: <Settings size={18} />, path: "/dashboard/settings" },
 ];
 
-const SideNav: NextPage<SideNavProps> = ({ className, role = "vendor" }) => {
+const A = {
+  text: "text-fuchsia-500 dark:text-fuchsia-400",
+  activeRow:
+    "bg-fuchsia-500/10 text-fuchsia-500 dark:text-fuchsia-300 font-medium ring-1 ring-fuchsia-500/30 shadow-[0_0_14px_-2px] shadow-fuchsia-500/40",
+  hoverRow: "hover:bg-fuchsia-500/5 hover:text-fuchsia-500 dark:hover:text-fuchsia-300",
+  iconGlow: "drop-shadow-[0_0_6px_theme(colors.fuchsia.500)]",
+  iconHover: "group-hover:text-fuchsia-500",
+  bar: "bg-fuchsia-500 shadow-[0_0_8px_1px] shadow-fuchsia-500/70",
+  dot: "bg-fuchsia-500 shadow-[0_0_10px_2px] shadow-fuchsia-500/70",
+  rail: "border-fuchsia-500/20",
+  chevron: "text-zinc-500 hover:bg-fuchsia-500/10 hover:text-fuchsia-500",
+};
+
+const iconClass = (active: boolean) =>
+  cn(
+    "shrink-0 transition-all duration-200",
+    active ? cn(A.text, A.iconGlow) : cn("text-zinc-500 dark:text-zinc-400", A.iconHover)
+  );
+
+const rowClass = (active: boolean, collapsed: boolean) =>
+  cn(
+    "group relative flex items-center rounded-md text-[13px] transition-all duration-200",
+    collapsed ? "justify-center p-2" : "gap-2.5 px-2.5 py-1.5",
+    active ? A.activeRow : cn("text-zinc-700 dark:text-zinc-300", A.hoverRow)
+  );
+
+const ActiveBar = ({ active }: { active: boolean }) =>
+  active ? (
+    <span
+      aria-hidden
+      className={cn("absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full", A.bar)}
+    />
+  ) : null;
+
+const SideNav: NextPage<SideNavProps> = ({ className }) => {
   const path = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-
-  const filteredItems = sidebarItems.filter((item) => {
-    if (role === "vendor" && item.vendorHidden) return false;
-    return true;
-  });
+  const [openItem, setOpenItem] = useState<string>("");
 
   const handleLogout = async () => {
     try {
@@ -169,106 +119,137 @@ const SideNav: NextPage<SideNavProps> = ({ className, role = "vendor" }) => {
     router.push("/login");
   };
 
-  const linkClass = (href?: string) =>
-    cn(
-      "flex items-center p-2 rounded-md transition-all duration-200 hover:bg-gray-100 dark:hover:bg-zinc-800",
-      href === path ? "bg-zinc-100 dark:bg-zinc-800 font-medium" : "text-gray-700 dark:text-white"
-    );
-
   return (
     <div
       className={cn(
-        "sticky top-20 left-4 h-[calc(100vh-7rem)] mb-4 border rounded-lg border-zinc-200 dark:border-neutral-700 flex flex-col transition-all duration-300 overflow-hidden",
-        collapsed ? "w-20" : "w-64 lg:w-64",
+        "flex h-full shrink-0 flex-col overflow-hidden rounded-lg border",
+        "border-zinc-200 bg-white dark:border-neutral-800 dark:bg-neutral-950",
+        "transition-all duration-300",
+        collapsed ? "w-16" : "w-52",
         className
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-2 border-b border-zinc-200 dark:border-neutral-700">
+      <div
+        className={cn(
+          "flex items-center border-b border-zinc-200 p-2 dark:border-neutral-800",
+          collapsed ? "justify-center" : "justify-between"
+        )}
+      >
         {!collapsed && (
-          <div className="text-sm font-semibold cursor-default">
-            {role === "vendor" ? "ShoeStore Vendor" : "ShoeStore Admin"}
+          <div className="flex cursor-default items-center gap-2 pl-1 text-sm font-semibold">
+            <span className={cn("h-2 w-2 rounded-full", A.dot)} />
+            ShoeStore Vendor
           </div>
         )}
         <Button
           size="sm"
           variant="ghost"
-          className="p-2 transition-colors hover:bg-gray-100 dark:hover:bg-zinc-800"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className={cn("h-7 w-7 p-0", A.chevron)}
           onClick={() => setCollapsed(!collapsed)}
         >
-          {collapsed ? "➤" : "◀"}
+          {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
         </Button>
       </div>
 
-      {/* Sidebar Items */}
-      <div className="px-2 py-4 overflow-y-auto bg-gray-50 dark:bg-neutral-900 flex-1">
-        <ul className="space-y-1 text-sm">
-          {filteredItems.map((item, idx) => (
-            <li key={idx}>
-              {item.subItems && item.subItems.length > 0 ? (
-                <Accordion type="single" collapsible>
-                  <AccordionItem value={item.title}>
-                    <AccordionTrigger className="flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 group">
-                      <div className="flex items-center w-full">
-                        {React.cloneElement(item.icon, {
-                          className: cn(
-                            "transition-colors duration-200 text-zinc-700 dark:text-white",
-                            path === item.path && "text-fuchsia-800 dark:text-fuchsia-400"
-                          ),
-                        })}
-                        {!collapsed && <span className="ml-3">{item.title}</span>}
-                      </div>
-                    </AccordionTrigger>
+      {/* Scrollable items */}
+      <div
+        className={cn(
+          "min-h-0 flex-1 overflow-y-auto bg-gray-50/60 px-2 py-3 dark:bg-neutral-900/60",
+          "[scrollbar-width:thin] [scrollbar-color:theme(colors.zinc.700)_transparent]"
+        )}
+      >
+        <ul className="space-y-0.5">
+          {sidebarItems.map((item) => {
+            const hasSub = !!item.subItems?.length;
+            const childActive = hasSub && item.subItems!.some((s) => s.path === path);
+            const active = item.path ? item.path === path : childActive;
 
-                    {!collapsed && (
-                      <AccordionContent className="flex flex-col pl-6">
-                        {item.subItems.map((sub, sidx) => (
-                          <Link key={sidx} href={sub.path}>
-                            <div
-                              className={cn(
-                                "flex items-center p-2 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800",
-                                path === sub.path && "bg-zinc-100 dark:bg-zinc-800 font-medium"
-                              )}
-                            >
-                              {React.cloneElement(sub.icon, {
-                                className: cn(
-                                  "transition-colors duration-200 text-zinc-700 dark:text-white",
-                                  path === sub.path && "text-fuchsia-800 dark:text-fuchsia-400"
-                                ),
-                              })}
-                              <span className="ml-3">{sub.title}</span>
-                            </div>
-                          </Link>
-                        ))}
-                      </AccordionContent>
-                    )}
-                  </AccordionItem>
-                </Accordion>
-              ) : item.title === "Logout" ? (
-                <button onClick={handleLogout} className="w-full">
-                  <div className={linkClass()}>
-                    {React.cloneElement(item.icon, {
-                      className: "transition-colors duration-200 text-zinc-700 dark:text-white",
-                    })}
-                    {!collapsed && <span className="ml-3 flex-1">{item.title}</span>}
-                  </div>
-                </button>
-              ) : (
-                <Link href={item.path || "#"}>
-                  <div className={linkClass(item.path)}>
-                    {React.cloneElement(item.icon, {
-                      className: cn(
-                        "transition-colors duration-200 text-zinc-700 dark:text-white",
-                        path === item.path && "text-fuchsia-800 dark:text-fuchsia-400"
-                      ),
-                    })}
-                    {!collapsed && <span className="ml-3 flex-1">{item.title}</span>}
-                  </div>
-                </Link>
-              )}
-            </li>
-          ))}
+            return (
+              <li key={item.title}>
+                {hasSub ? (
+                  <Accordion
+                    type="single"
+                    collapsible
+                    value={collapsed ? "" : openItem}
+                    onValueChange={setOpenItem}
+                  >
+                    <AccordionItem value={item.title} className="border-none">
+                      <AccordionTrigger
+                        title={collapsed ? item.title : undefined}
+                        onClick={() => {
+                          if (collapsed) {
+                            setCollapsed(false);
+                            setOpenItem(item.title);
+                          }
+                        }}
+                        className={cn(
+                          rowClass(active, collapsed),
+                          "w-full hover:no-underline",
+                          "[&>svg:last-child]:h-3.5 [&>svg:last-child]:w-3.5",
+                          collapsed && "[&>svg:last-child]:hidden"
+                        )}
+                      >
+                        <ActiveBar active={active} />
+                        <div className="flex w-full items-center gap-2.5">
+                          {React.cloneElement(item.icon, { className: iconClass(active) } as any)}
+                          {!collapsed && <span>{item.title}</span>}
+                        </div>
+                      </AccordionTrigger>
+
+                      {!collapsed && (
+                        <AccordionContent
+                          className={cn("ml-4 flex flex-col gap-0.5 border-l pb-1 pl-2 pt-0.5", A.rail)}
+                        >
+                          {item.subItems!.map((sub) => {
+                            const subActive = sub.path === path;
+                            return (
+                              <Link key={sub.path} href={sub.path}>
+                                <div className={cn(rowClass(subActive, false), "py-1 text-xs")}>
+                                  <ActiveBar active={subActive} />
+                                  {React.cloneElement(sub.icon, { className: iconClass(subActive) } as any)}
+                                  <span>{sub.title}</span>
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </AccordionContent>
+                      )}
+                    </AccordionItem>
+                  </Accordion>
+                ) : (
+                  <Link href={item.path || "#"} title={collapsed ? item.title : undefined}>
+                    <div className={rowClass(active, collapsed)}>
+                      <ActiveBar active={active} />
+                      {React.cloneElement(item.icon, { className: iconClass(active) } as any)}
+                      {!collapsed && <span className="flex-1">{item.title}</span>}
+                    </div>
+                  </Link>
+                )}
+              </li>
+            );
+          })}
         </ul>
+      </div>
+
+      {/* Pinned footer */}
+      <div className="border-t border-zinc-200 p-2 dark:border-neutral-800">
+        <button
+          type="button"
+          title={collapsed ? "Logout" : undefined}
+          onClick={handleLogout}
+          className={cn(
+            rowClass(false, collapsed),
+            "w-full text-left hover:bg-red-500/10 hover:text-red-500"
+          )}
+        >
+          <LogOut
+            size={18}
+            className="shrink-0 text-zinc-500 transition-colors group-hover:text-red-500"
+          />
+          {!collapsed && <span className="flex-1">Logout</span>}
+        </button>
       </div>
     </div>
   );

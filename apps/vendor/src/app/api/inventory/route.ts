@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getVendorInventory } from "@/lib/inventory";
 
 export const dynamic = "force-dynamic";
 
@@ -18,35 +18,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const products = await prisma.product.findMany({
-      where: { vendorId },
-      include: {
-        variants: {
-          include: {
-            values: { include: { variantValue: { include: { variantType: true } } } },
-          },
-        },
-      },
-    });
-
-    const inventory = products.flatMap((product) =>
-      product.variants.map((variant) => ({
-        id: variant.id,
-        sku: variant.sku,
-        product: { id: product.id, name: product.name },
-        attributes: variant.values.map((v) => ({
-          type: v.variantValue.variantType.name,
-          value: v.variantValue.name,
-          hexCode: v.variantValue.hexCode,
-        })),
-        stock: variant.stock,
-        priceOverride: variant.priceOverride,
-      }))
-    );
-
-    const lowStock = inventory.filter((item) => item.stock < 10);
-
-    return NextResponse.json({ data: inventory, lowStockCount: lowStock.length });
+    const inventory = await getVendorInventory(vendorId);
+    return NextResponse.json(inventory);
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Failed to fetch inventory" }, { status: 500 });

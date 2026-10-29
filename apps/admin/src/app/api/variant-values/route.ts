@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-
 import { isAdmin } from "@/lib/auth";
 // GET - list all variant values (optionally filtered by variantTypeId)
 export async function GET(req: Request) {

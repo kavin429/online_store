@@ -9,7 +9,17 @@ export async function GET(req: NextRequest) {
     const limit = Number(searchParams.get("limit") || 10);
     const skip = (page - 1) * limit;
 
+    // Products with no stock anywhere stay hidden from the storefront until
+    // they are restocked (product-level or variant-level stock).
+    const inStockOnly = {
+      OR: [
+        { stock: { gt: 0 } },
+        { variants: { some: { stock: { gt: 0 } } } },
+      ],
+    };
+
     const products = await prisma.product.findMany({
+      where: inStockOnly,
       skip,
       take: limit,
 
@@ -64,7 +74,7 @@ export async function GET(req: NextRequest) {
       })),
     }));
 
-    const total = await prisma.product.count();
+    const total = await prisma.product.count({ where: inStockOnly });
 
     return NextResponse.json({
       data: formattedProducts,

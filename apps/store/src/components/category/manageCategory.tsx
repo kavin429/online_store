@@ -22,6 +22,7 @@ import {
 } from "@online-store/ui/form";
 import { toast } from "sonner";
 import { categorySchema, CategoryFormValues } from "@/lib/validator/category_validator";
+import { Input } from "@online-store/ui/input";
 
 type Props = {
   open: boolean;
@@ -105,7 +106,7 @@ export default function AddCategoryDialog({
                 <FormItem>
                   <FormLabel>Category Name</FormLabel>
                   <FormControl>
-                    <input
+                    <Input
                       {...field}
                       placeholder="Enter category name"
                       className="border p-2 w-full rounded"
@@ -155,7 +156,7 @@ export default function AddCategoryDialog({
               <Button variant="outline" type="button" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" disabled={loading} variant="shoesecondary">
                 {loading ? "Saving..." : defaultValues ? "Update Category" : "Add Category"}
               </Button>
             </DialogFooter>

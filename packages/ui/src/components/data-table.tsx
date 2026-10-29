@@ -38,8 +38,8 @@ interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   filterBy: string;
-  renderExpandedRow?: (row: TData) => React.ReactNode; 
-  expandedRows?: Record<string, boolean>; 
+  renderExpandedRow?: (row: TData) => React.ReactNode;
+  expandedRows?: Record<string, boolean>;
 }
 
 export function DataTable<TData, TValue>({
@@ -71,11 +71,12 @@ export function DataTable<TData, TValue>({
   });
 
   return (
-    <Card className="mt-6">
-      <div className="flex justify-between items-center p-5 border-b">
-        <div className="relative w-full max-w-md">
+    <Card className="mt-4 w-full overflow-hidden border-fuchsia-200 shadow-sm shadow-fuchsia-100 sm:mt-6 dark:border-fuchsia-900/50 dark:shadow-none">
+      {/* Toolbar: stacked on mobile, single row from sm up */}
+      <div className="flex flex-col gap-3 border-b border-fuchsia-200 bg-gradient-to-r from-fuchsia-50 to-transparent p-3 sm:flex-row sm:items-center sm:justify-between sm:p-5 dark:border-fuchsia-900/50 dark:from-fuchsia-950/30">
+        <div className="relative w-full sm:max-w-md">
           <Search
-            className="absolute left-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none"
+            className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-fuchsia-500 sm:top-2.5"
             aria-hidden="true"
           />
           <Input
@@ -87,46 +88,66 @@ export function DataTable<TData, TValue>({
             onChange={(e) =>
               table.getColumn(filterBy)?.setFilterValue(e.target.value)
             }
-            className="pl-9 max-w-sm"
+            className="w-full pl-9 sm:max-w-sm"
             aria-label={`Filter ${filterBy}`}
           />
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto">
-              Columns
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {table
-              .getAllColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  className="capitalize"
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="flex-1 border-fuchsia-300 text-fuchsia-700 hover:bg-fuchsia-100 hover:text-fuchsia-800 sm:flex-none dark:border-fuchsia-800 dark:text-fuchsia-300 dark:hover:bg-fuchsia-950/50"
+              >
+                Columns
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="max-h-72 overflow-y-auto border-fuchsia-200 dark:border-fuchsia-900/50"
+            >
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    className="capitalize focus:bg-fuchsia-50 focus:text-fuchsia-900 dark:focus:bg-fuchsia-950/50 dark:focus:text-fuchsia-100"
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
+                  >
+                    {column.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        <button className="ml-3 p-2 border rounded-lg hover:bg-zinc-100 dark:hover:bg-neutral-800">
-          <Filter className="h-4 w-4 text-zinc-800 dark:text-zinc-200" />
-        </button>
+          <button
+            className="shrink-0 rounded-lg border border-fuchsia-300 p-2 hover:bg-fuchsia-100 dark:border-fuchsia-800 dark:hover:bg-fuchsia-950/50"
+            aria-label="Filters"
+          >
+            <Filter className="h-4 w-4 text-fuchsia-700 dark:text-fuchsia-300" />
+          </button>
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <Table className="w-full text-sm">
-          <TableHeader>
+      {/* Table: scrolls horizontally on small screens */}
+      <div className="w-full overflow-x-auto">
+        <Table className="w-full min-w-[640px] text-xs sm:min-w-0 sm:text-sm">
+          <TableHeader className="bg-fuchsia-50 dark:bg-fuchsia-950/30">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="border-b">
+              <TableRow
+                key={headerGroup.id}
+                className="border-b border-fuchsia-200 hover:bg-transparent dark:border-fuchsia-900/50"
+              >
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} className="p-2">
+                  <TableHead
+                    key={header.id}
+                    className="whitespace-nowrap p-2 font-semibold text-fuchsia-900 dark:text-fuchsia-200"
+                  >
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -150,10 +171,10 @@ export function DataTable<TData, TValue>({
                     {/* Main Row */}
                     <TableRow
                       data-state={row.getIsSelected() && "selected"}
-                      className="border-b last:border-0"
+                      className="border-b border-fuchsia-100 transition-colors last:border-0 hover:bg-fuchsia-50/70 data-[state=selected]:bg-fuchsia-100 dark:border-fuchsia-900/30 dark:hover:bg-fuchsia-950/30 dark:data-[state=selected]:bg-fuchsia-950/50"
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="p-4">
+                        <TableCell key={cell.id} className="p-2 sm:p-4">
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext()
@@ -163,9 +184,11 @@ export function DataTable<TData, TValue>({
                     </TableRow>
 
                     {isExpanded && renderExpandedRow && (
-                      <TableRow className="bg-zinc-50 dark:bg-neutral-900/30">
+                      <TableRow className="border-l-2 border-l-fuchsia-500 bg-fuchsia-50/60 hover:bg-fuchsia-50/60 dark:bg-fuchsia-950/20">
                         <TableCell colSpan={table.getAllColumns().length}>
-                          <div className="p-3">{renderExpandedRow(row.original)}</div>
+                          <div className="p-2 sm:p-3">
+                            {renderExpandedRow(row.original)}
+                          </div>
                         </TableCell>
                       </TableRow>
                     )}
@@ -174,9 +197,12 @@ export function DataTable<TData, TValue>({
               })
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="p-4 text-right">
-                  <div className="flex items-center justify-center text-center text-zinc-700 dark:text-zinc-400">
-                    <Frown size="18" className="me-1" />
+                <TableCell
+                  colSpan={columns.length}
+                  className="p-4 text-right"
+                >
+                  <div className="flex items-center justify-center text-center text-fuchsia-700 dark:text-fuchsia-300">
+                    <Frown size="18" className="me-1 text-fuchsia-500" />
                     <div className="text-sm">No results found.</div>
                   </div>
                 </TableCell>
@@ -186,10 +212,12 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-end space-x-2 py-12 p-4">
+      {/* Pagination: full-width buttons on mobile */}
+      <div className="flex items-center gap-2 border-t border-fuchsia-100 p-3 py-6 sm:justify-end sm:space-x-0 sm:p-4 sm:py-12 dark:border-fuchsia-900/30">
         <Button
           variant="outline"
           size="sm"
+          className="flex-1 border-fuchsia-300 text-fuchsia-700 hover:bg-fuchsia-100 hover:text-fuchsia-800 disabled:border-fuchsia-100 disabled:text-fuchsia-300 sm:flex-none dark:border-fuchsia-800 dark:text-fuchsia-300 dark:hover:bg-fuchsia-950/50"
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
         >
@@ -198,6 +226,7 @@ export function DataTable<TData, TValue>({
         <Button
           variant="outline"
           size="sm"
+          className="flex-1 border-fuchsia-300 text-fuchsia-700 hover:bg-fuchsia-100 hover:text-fuchsia-800 disabled:border-fuchsia-100 disabled:text-fuchsia-300 sm:flex-none dark:border-fuchsia-800 dark:text-fuchsia-300 dark:hover:bg-fuchsia-950/50"
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
         >
