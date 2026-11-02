@@ -318,3 +318,38 @@ export type Offer = {
   createdAt: string;
   updatedAt: string;
 };
+
+/* ── Reviews ── */
+export type ReviewStatus = "VISIBLE" | "HIDDEN";
+export type ReviewReportStatus = "NONE" | "OPEN" | "RESOLVED" | "DISMISSED";
+export type ReviewAuthorType = "CUSTOMER" | "VENDOR" | "ADMIN";
+
+export type ReviewResponse = {
+  id: number;
+  comment: string;
+  authorType: ReviewAuthorType;
+  createdAt: string;
+  user?: { id: number; name: string | null; image: string | null } | null;
+  vendor?: { id: number; name: string } | null;
+  admin?: { id: number; name: string } | null;
+};
+
+export type Review = {
+  id: number;
+  rating: number;
+  comment: string | null;
+  status: ReviewStatus;
+  editedAt: string | null;
+  verifiedPurchase: boolean;
+  reportStatus: ReviewReportStatus;
+  reportReason: string | null;
+  reportedAt: string | null;
+  reportResolvedAt: string | null;
+  adminNote: string | null;
+  user: { id: number; name: string | null; email: string | null; image: string | null };
+  product: { id: number; name: string; vendor?: { id: number; name: string } | null };
+  reportedByVendor?: { id: number; name: string } | null;
+  responses: ReviewResponse[];
+  createdAt: string;
+  updatedAt: string;
+};

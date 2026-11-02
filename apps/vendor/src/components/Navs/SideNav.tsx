@@ -30,6 +30,7 @@ import {
   RotateCcw,
   ClipboardList,
   BadgePercent,
+  UserRound,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
@@ -69,6 +70,7 @@ const sidebarItems: SidebarItem[] = [
   { title: "Reviews", icon: <Star size={18} />, path: "/dashboard/reviews" },
   { title: "Payouts", icon: <DollarSign size={18} />, path: "/dashboard/payouts" },
   { title: "Shipping", icon: <Truck size={18} />, path: "/dashboard/shipping" },
+  { title: "Profile", icon: <UserRound size={18} />, path: "/dashboard/profile" },
   { title: "Settings", icon: <Settings size={18} />, path: "/dashboard/settings" },
 ];
 

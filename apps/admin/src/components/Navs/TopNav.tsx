@@ -1,6 +1,7 @@
 "use client";
 
 import { NextPage } from "next";
+import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   DropdownMenu,
@@ -17,6 +18,7 @@ interface Props {
 }
 
 const TopNav: NextPage<Props> = ({ user }) => {
+  const router = useRouter();
   const firstLetter =
   user?.name?.charAt(0)?.toUpperCase() ?? "A";
 
@@ -51,6 +53,13 @@ const TopNav: NextPage<Props> = ({ user }) => {
             <DropdownMenuLabel className="text-sm font-semibold text-fuchsia-300">
               My Account
             </DropdownMenuLabel>
+
+            <DropdownMenuItem
+              onSelect={() => router.push("/dashboard/profile")}
+              className="hover:bg-fuchsia-700 hover:text-white rounded-md cursor-pointer"
+            >
+              My Profile
+            </DropdownMenuItem>
 
             <DropdownMenuItem
               onClick={handleSignOut}

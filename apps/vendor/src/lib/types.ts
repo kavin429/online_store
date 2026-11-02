@@ -125,13 +125,35 @@ export type Order = {
 
 /* ── Review (API response shape) ──
    Returned by /api/reviews (queries prisma.review for the vendor's products). */
+export type ReviewAuthorType = "CUSTOMER" | "VENDOR" | "ADMIN";
+export type ReviewStatus = "VISIBLE" | "HIDDEN";
+export type ReviewReportStatus = "NONE" | "OPEN" | "RESOLVED" | "DISMISSED";
+
+export type ReviewResponse = {
+  id: number;
+  comment: string;
+  authorType: ReviewAuthorType;
+  createdAt: string;
+  user?: { id: number; name: string | null; image: string | null } | null;
+  vendor?: { id: number; name: string } | null;
+  admin?: { id: number; name: string } | null;
+};
+
 export type Review = {
   id: number;
   rating: number;
   comment: string | null;
+  status: ReviewStatus;
+  editedAt: string | null;
+  verifiedPurchase: boolean;
+  reportStatus: ReviewReportStatus;
+  reportReason: string | null;
+  reportedAt: string | null;
+  reportResolvedAt: string | null;
+  adminNote: string | null;
   user: { id: number; name: string | null; email: string | null; image: string | null };
   product: { id: number; name: string };
-  responses: { id: number; comment: string; createdAt: string }[];
+  responses: ReviewResponse[];
   createdAt: string;
 };
 

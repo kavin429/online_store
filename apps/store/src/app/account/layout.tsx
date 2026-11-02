@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils";
 const NAV = [
   { href: "/account", label: "Overview" },
   { href: "/account/orders", label: "My Orders" },
+  { href: "/account/my-reviews", label: "My Reviews" },
   { href: "/account/offers", label: "Claimed Offers" },
+  { href: "/profile", label: "Profile & Rewards" },
 ];
 
 export default async function AccountLayout({

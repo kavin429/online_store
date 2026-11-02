@@ -59,6 +59,13 @@ const TopNav: NextPage<Props> = ({ user }) => {
             </DropdownMenuLabel>
 
             <DropdownMenuItem
+              onSelect={() => router.push("/dashboard/profile")}
+              className="hover:bg-fuchsia-700 hover:text-white rounded-md cursor-pointer"
+            >
+              My Profile
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
               onClick={handleSignOut}
               className="hover:bg-fuchsia-700 hover:text-white rounded-md cursor-pointer"
             >

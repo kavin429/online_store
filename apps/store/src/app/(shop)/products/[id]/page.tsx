@@ -11,6 +11,7 @@ import ProductCard from "@/components/Home/product-card";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import AuthRequiredDialog from "@/components/misc/authRequiredDialog";
+import ProductReviews from "@/components/reviews/product-reviews";
 
 interface VariantValue {
   id: number;
@@ -449,9 +450,7 @@ export default function ProductDetailsPage() {
           )}
 
           {activeTab === "reviews" && (
-            <div className="flex flex-col gap-4">
-              <p className="text-zinc-400">No reviews yet. Be the first to review this product.</p>
-            </div>
+            <ProductReviews productId={product.id} />
           )}
 
           {activeTab === "comments" && (

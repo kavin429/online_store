@@ -30,6 +30,7 @@ import {
   UserRound,
   Percent,
   Ticket,
+  Star,
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
@@ -69,6 +70,8 @@ const sidebarItems: SidebarItem[] = [
   { title: "Orders", icon: <ShoppingBag size={18} />, path: "/dashboard/orders" },
   { title: "Offers", icon: <Percent size={18} />, path: "/dashboard/offers" },
   { title: "Promos", icon: <Ticket size={18} />, path: "/dashboard/promos" },
+  { title: "Reviews", icon: <Star size={18} />, path: "/dashboard/reviews" },
+  { title: "Profile", icon: <UserRound size={18} />, path: "/dashboard/profile" },
 ];
 
 /* ---------- accent theme (single place to change the color) ----------

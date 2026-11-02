@@ -24,7 +24,8 @@ model Admin {
   name      String
   createdAt DateTime @default(now())
 
-  promos Promo[]
+  promos          Promo[]
+  reviewResponses ReviewResponse[] @relation("ReviewResponseAuthor")
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -89,6 +90,10 @@ model Vendor {
   promos         Promo[]
   offers         Offer[]
   variantValues  VariantValue[]
+
+  // ── Reviews ──
+  reportedReviews Review[]         @relation("ReviewReports")
+  reviewResponses ReviewResponse[] @relation("ReviewResponseAuthor")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -292,12 +297,19 @@ model User {
 
   email String? @unique
   phone String?
+  phoneCode String? // dial prefix, e.g. "+94"
 
   country  String?
   province String?
   district String?
   city     String?
   address  String?
+
+  dateOfBirth DateTime?
+
+  // Marketing preferences shown on the profile page.
+  offersEmail Boolean @default(true)
+  offersSms   Boolean @default(false)
 
   password String?
 
@@ -310,9 +322,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  accounts Account[]
-  orders   Order[]
-  reviews  Review[]
+  accounts        Account[]
+  orders          Order[]
+  reviews         Review[]
+  reviewResponses ReviewResponse[] @relation("ReviewResponseAuthor")
+  addresses       Address[]
 
   status      CustomerStatus @default(ACTIVE)
   blockReason String?
@@ -348,6 +362,30 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+}
+
+// Saved delivery addresses shown on the customer profile page. The legacy
+// single address columns on User are still used by checkout; this table adds
+// the multi-address address book the profile UI needs.
+model Address {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  label     String
+  line      String
+  country   String
+  province  String
+  district  String
+  city      String
+  postal    String
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -387,12 +425,33 @@ model Order {
   status OrderStatus @default(PENDING)
   items  OrderItem[]
 
+  // Courier tracking reference, shown on the customer profile when present.
+  trackingNumber String?
+
+  // ── Delivery ──
+  driverId       Int?
+  driver         Driver?        @relation("OrderDriver", fields: [driverId], references: [id], onDelete: SetNull)
+  deliveryStatus DeliveryStatus @default(UNASSIGNED)
+  assignedAt     DateTime?
+  pickedUpAt     DateTime?
+  deliveredAt    DateTime?
+  deliveryNote   String?
+
+  // Latest position shared by the driver app, used by the customer tracker.
+  currentLat        Float?
+  currentLng        Float?
+  locationUpdatedAt DateTime?
+
+  trackingEvents TrackingEvent[]
+
   returnRequest ReturnRequest?
   payoutItems   PayoutItem[]
   promoUsage    PromoUsage?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([driverId, deliveryStatus])
 }
 
 enum OrderStatus {
@@ -417,14 +476,124 @@ model OrderItem {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ── Drivers / Delivery tracking ──
+// ═══════════════════════════════════════════════════════════════
+
+enum DriverStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum DeliveryStatus {
+  UNASSIGNED
+  ASSIGNED
+  PICKED_UP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+// A delivery rider. Admins create these from the admin panel; the driver app
+// signs in with the auto-generated `username` + password.
+model Driver {
+  id Int @id @default(autoincrement())
+
+  name     String
+  username String  @unique
+  email    String? @unique
+  phone    String?
+
+  password      String
+  plainPassword String? // kept so an admin can re-share the generated login
+
+  vehicleType   String?
+  vehicleNumber String?
+  licenseNumber String?
+  note          String?
+
+  status      DriverStatus @default(ACTIVE)
+  isAvailable Boolean      @default(true)
+  lastLoginAt DateTime?
+
+  // Last known position (updated from the driver app).
+  currentLat        Float?
+  currentLng        Float?
+  locationUpdatedAt DateTime?
+
+  deliveries     Order[]         @relation("OrderDriver")
+  trackingEvents TrackingEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Append-only history shown on the customer tracking timeline.
+model TrackingEvent {
+  id Int @id @default(autoincrement())
+
+  orderId Int
+  order   Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  driverId Int?
+  driver   Driver? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
+  status  DeliveryStatus
+  title   String
+  message String?
+
+  latitude  Float?
+  longitude Float?
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════
 // ── Reviews ──
 // ═══════════════════════════════════════════════════════════════
+
+enum ReviewStatus {
+  VISIBLE
+  HIDDEN
+}
+
+enum ReviewReportStatus {
+  NONE
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+enum ReviewAuthorType {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
 
 model Review {
   id Int @id @default(autoincrement())
 
   rating  Int
-  comment String?
+  comment String? @db.Text
+
+  // Moderation: hidden reviews stay on record but are not shown in the store.
+  status   ReviewStatus @default(VISIBLE)
+  editedAt DateTime?
+
+  // Vendors can report a review of one of their products; admins resolve it.
+  reportStatus       ReviewReportStatus @default(NONE)
+  reportReason       String?             @db.Text
+  reportedAt         DateTime?
+  reportResolvedAt   DateTime?
+  reportedByVendorId Int?
+  reportedByVendor   Vendor? @relation("ReviewReports", fields: [reportedByVendorId], references: [id], onDelete: SetNull)
+  adminNote          String?             @db.Text
+
+  // Verified purchase is informational: the customer had a delivered order
+  // containing this product when the review was written.
+  verifiedPurchase Boolean @default(false)
 
   userId Int
   user   User @relation(fields: [userId], references: [id])
@@ -436,11 +605,29 @@ model Review {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // One review per customer per product is enforced by the API; this index
+  // keeps the lookup fast without risking existing duplicate rows.
+  @@index([userId, productId])
+  @@index([productId, status])
+  @@index([reportStatus])
 }
 
 model ReviewResponse {
   id      Int    @id @default(autoincrement())
-  comment String
+  comment String @db.Text
+
+  // Who wrote the reply: the customer (follow-up), the product's vendor, or an admin.
+  authorType ReviewAuthorType @default(VENDOR)
+
+  userId Int?
+  user   User? @relation("ReviewResponseAuthor", fields: [userId], references: [id], onDelete: Cascade)
+
+  vendorId Int?
+  vendor   Vendor? @relation("ReviewResponseAuthor", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  adminId Int?
+  admin   Admin? @relation("ReviewResponseAuthor", fields: [adminId], references: [id], onDelete: Cascade)
 
   reviewId Int
   review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)

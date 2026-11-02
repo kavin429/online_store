@@ -8,7 +8,8 @@ export default async function ReviewsPage() {
 
   if (vendorSessionRaw) {
     try {
-      vendorId = JSON.parse(vendorSessionRaw).id;
+      const session = JSON.parse(vendorSessionRaw);
+      vendorId = typeof session.id === "number" ? session.id : null;
     } catch {}
   }
 
@@ -21,7 +22,15 @@ export default async function ReviewsPage() {
     include: {
       user: { select: { id: true, name: true, email: true, image: true } },
       product: { select: { id: true, name: true } },
-      responses: true,
+      reportedByVendor: { select: { id: true, name: true } },
+      responses: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          user: { select: { id: true, name: true, image: true } },
+          vendor: { select: { id: true, name: true } },
+          admin: { select: { id: true, name: true } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
