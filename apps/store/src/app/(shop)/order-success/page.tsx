@@ -147,8 +147,13 @@ function OrderSuccessContent() {
       )}
 
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        {order && (
+          <Link href={`/account/orders/${order.id}`}>
+            <Button variant="shoe">Track My Order</Button>
+          </Link>
+        )}
         <Link href="/">
-          <Button variant="shoe">Continue Shopping</Button>
+          <Button variant={order ? "outline" : "shoe"}>Continue Shopping</Button>
         </Link>
         <Link href="/orders">
           <Button variant="outline">View My Orders</Button>

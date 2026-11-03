@@ -37,7 +37,7 @@ type AuthorizeResult = {
 
 /**
  * Resolves a sign-in attempt against the identity tables that belong to the
- * roles this app allows. Order matters: CUSTOMER -> VENDOR -> ADMIN.
+ * roles this app allows. Order matters: CUSTOMER -> VENDOR -> ADMIN -> DRIVER.
  */
 async function authorize(
   identifier: string,
@@ -120,6 +120,28 @@ async function authorize(
         name: "Admin",
         email: envUser,
         role: ROLES.ADMIN,
+      };
+    }
+  }
+
+  if (roles.includes(ROLES.DRIVER)) {
+    const driver = await prisma.driver.findFirst({
+      where: { OR: [{ username: identifier }, { email: identifier }] },
+    });
+
+    if (driver && (await verifyPassword(password, driver.password))) {
+      if (driver.status === "BLOCKED") return null;
+
+      await prisma.driver.update({
+        where: { id: driver.id },
+        data: { lastLoginAt: new Date() },
+      });
+
+      return {
+        id: String(driver.id),
+        name: driver.name,
+        email: driver.email ?? driver.username,
+        role: ROLES.DRIVER,
       };
     }
   }
@@ -217,5 +239,11 @@ export const vendorAuthOptions: NextAuthOptions = buildAuthOptions({
 /** The admin app: admins only. */
 export const adminAuthOptions: NextAuthOptions = buildAuthOptions({
   roles: [ROLES.ADMIN],
+  signInPage: "/login",
+});
+
+/** The driver app: delivery riders only. */
+export const driverAuthOptions: NextAuthOptions = buildAuthOptions({
+  roles: [ROLES.DRIVER],
   signInPage: "/login",
 });

@@ -10,6 +10,7 @@
     "dev:admin": "pnpm --filter @online-store/admin dev",
     "dev:store": "pnpm --filter @online-store/store dev",
     "dev:vendor": "pnpm --filter @online-store/vendor dev",
+    "dev:driver": "pnpm --filter @online-store/driver dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

@@ -2,15 +2,24 @@ export const ROLES = {
   CUSTOMER: "CUSTOMER",
   VENDOR: "VENDOR",
   ADMIN: "ADMIN",
+  DRIVER: "DRIVER",
 } as const;
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
 
-export const ALL_ROLES: Role[] = [ROLES.CUSTOMER, ROLES.VENDOR, ROLES.ADMIN];
+export const ALL_ROLES: Role[] = [
+  ROLES.CUSTOMER,
+  ROLES.VENDOR,
+  ROLES.ADMIN,
+  ROLES.DRIVER,
+];
 
 export function isRole(value: unknown): value is Role {
   return (
-    value === ROLES.CUSTOMER || value === ROLES.VENDOR || value === ROLES.ADMIN
+    value === ROLES.CUSTOMER ||
+    value === ROLES.VENDOR ||
+    value === ROLES.ADMIN ||
+    value === ROLES.DRIVER
   );
 }
 

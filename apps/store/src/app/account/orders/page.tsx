@@ -99,7 +99,7 @@ export default function OrdersPage() {
 
       <div className="space-y-4">
         {orders.map((order) => (
-          <Link key={order.id} href={`/order-success?orderId=${order.id}`}>
+          <Link key={order.id} href={`/account/orders/${order.id}`}>
             <Card className="p-5 border border-fuchsia-100 dark:border-fuchsia-900/40 hover:border-fuchsia-300 dark:hover:border-fuchsia-700 transition-colors cursor-pointer">
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 min-w-0">

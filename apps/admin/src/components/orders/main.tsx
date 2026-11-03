@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DataTable } from "@online-store/ui/data-table";
 import { columns, Order, OrderStatus } from "./column";
 import {
@@ -11,7 +11,11 @@ import {
   DialogFooter,
 } from "@online-store/ui/dialog";
 import { Button } from "@online-store/ui/button";
+import { Input } from "@online-store/ui/input";
+import { Label } from "@online-store/ui/label";
 import ConfirmDeleteDialog from "@/components/comman/confirm-delete-dialog";
+import { DeliveryStatus, Driver } from "@/lib/types";
+import { toast } from "sonner";
 
 const STATUS_OPTIONS: OrderStatus[] = [
   "PENDING",
@@ -21,6 +25,26 @@ const STATUS_OPTIONS: OrderStatus[] = [
   "CANCELLED",
 ];
 
+const DELIVERY_OPTIONS: DeliveryStatus[] = [
+  "UNASSIGNED",
+  "ASSIGNED",
+  "PICKED_UP",
+  "OUT_FOR_DELIVERY",
+  "DELIVERED",
+  "FAILED",
+  "CANCELLED",
+];
+
+const DELIVERY_LABELS: Record<DeliveryStatus, string> = {
+  UNASSIGNED: "Unassigned",
+  ASSIGNED: "Driver assigned",
+  PICKED_UP: "Picked up",
+  OUT_FOR_DELIVERY: "Out for delivery",
+  DELIVERED: "Delivered",
+  FAILED: "Failed",
+  CANCELLED: "Cancelled",
+};
+
 export default function OrderMain({ data }: { data: Order[] }) {
   const [orders, setOrders] = useState<Order[]>(data);
 
@@ -28,17 +52,53 @@ export default function OrderMain({ data }: { data: Order[] }) {
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
 
-  // Change status
+  // Change order status
   const [statusTarget, setStatusTarget] = useState<Order | null>(null);
   const [statusOpen, setStatusOpen] = useState(false);
   const [statusValue, setStatusValue] = useState<OrderStatus>("PENDING");
   const [savingStatus, setSavingStatus] = useState(false);
+
+  // Delivery assignment
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [driversLoading, setDriversLoading] = useState(false);
+  const [assignDriverId, setAssignDriverId] = useState("");
+  const [deliveryStatus, setDeliveryStatus] = useState<DeliveryStatus>("ASSIGNED");
+  const [deliveryNote, setDeliveryNote] = useState("");
+  const [savingDelivery, setSavingDelivery] = useState(false);
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<Order | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!viewOpen) return;
+    setDriversLoading(true);
+    fetch("/api/drivers")
+      .then((res) => res.json())
+      .then((json) => setDrivers(json.data ?? []))
+      .catch((err) => console.error("Failed to load drivers", err))
+      .finally(() => setDriversLoading(false));
+  }, [viewOpen]);
+
+  useEffect(() => {
+    if (!viewingOrder) return;
+    setAssignDriverId(viewingOrder.driverId ? String(viewingOrder.driverId) : "");
+    setDeliveryStatus(viewingOrder.deliveryStatus ?? "UNASSIGNED");
+    setDeliveryNote(viewingOrder.deliveryNote ?? "");
+  }, [viewingOrder]);
+
+  const refreshOrders = async () => {
+    const res = await fetch("/api/orders");
+    if (!res.ok) return;
+    const json = await res.json();
+    const fresh: Order[] = json.data ?? [];
+    setOrders(fresh);
+    setViewingOrder((current) =>
+      current ? fresh.find((order) => order.id === current.id) ?? current : current,
+    );
+  };
 
   const handleView = (order: Order) => {
     setViewingOrder(order);
@@ -67,12 +127,48 @@ export default function OrderMain({ data }: { data: Order[] }) {
       );
       setStatusOpen(false);
       setStatusTarget(null);
+      toast.success("Order status updated");
     } catch (error) {
       console.error("Update status error:", error);
+      toast.error("Failed to update order status");
     } finally {
       setSavingStatus(false);
     }
   };
+
+  const patchDelivery = async (payload: Record<string, unknown>, successMessage: string) => {
+    if (!viewingOrder) return;
+    setSavingDelivery(true);
+    try {
+      const res = await fetch(`/api/orders/${viewingOrder.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Failed to update delivery");
+
+      await refreshOrders();
+      toast.success(successMessage);
+    } catch (error: any) {
+      console.error("Delivery update error:", error);
+      toast.error(error.message || "Failed to update delivery");
+    } finally {
+      setSavingDelivery(false);
+    }
+  };
+
+  const handleAssignDriver = () =>
+    patchDelivery(
+      { driverId: assignDriverId ? Number(assignDriverId) : null },
+      assignDriverId ? "Driver assigned" : "Driver unassigned",
+    );
+
+  const handleUpdateDelivery = () =>
+    patchDelivery(
+      { deliveryStatus, deliveryNote },
+      "Delivery updated",
+    );
 
   const handleDeleteClick = (order: Order) => {
     setDeleteTarget(order);
@@ -118,7 +214,7 @@ export default function OrderMain({ data }: { data: Order[] }) {
 
       {/* View Details */}
       <Dialog open={viewOpen} onOpenChange={setViewOpen}>
-        <DialogContent className="max-w-lg space-y-4">
+        <DialogContent className="max-h-[92vh] max-w-2xl space-y-4 overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Order #{viewingOrder?.id}</DialogTitle>
           </DialogHeader>
@@ -143,7 +239,7 @@ export default function OrderMain({ data }: { data: Order[] }) {
                 {(viewingOrder.items || []).map((item) => (
                   <div key={item.id} className="flex justify-between">
                     <span>
-                      {item.name} × {item.quantity}
+                      {item.name} x {item.quantity}
                     </span>
                     <span>Rs. {(item.sellingPrice * item.quantity).toFixed(2)}</span>
                   </div>
@@ -164,6 +260,107 @@ export default function OrderMain({ data }: { data: Order[] }) {
                   <span>Rs. {viewingOrder.total.toFixed(2)}</span>
                 </div>
               </div>
+
+              {/* Delivery */}
+              <div className="space-y-3 rounded-lg border border-fuchsia-100 p-3 dark:border-fuchsia-900/40">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold">Delivery</p>
+                  <span className="rounded-full bg-fuchsia-50 px-2 py-0.5 text-xs font-medium text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300">
+                    {DELIVERY_LABELS[viewingOrder.deliveryStatus ?? "UNASSIGNED"]}
+                  </span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="assign-driver">Assigned driver</Label>
+                  <div className="flex gap-2">
+                    <select
+                      id="assign-driver"
+                      value={assignDriverId}
+                      onChange={(e) => setAssignDriverId(e.target.value)}
+                      className="w-full rounded border bg-background p-2"
+                      disabled={driversLoading || savingDelivery}
+                    >
+                      <option value="">No driver</option>
+                      {drivers
+                        .filter((driver) => driver.status === "ACTIVE")
+                        .map((driver) => (
+                          <option key={driver.id} value={driver.id}>
+                            {driver.name} ({driver.username})
+                            {driver.isAvailable ? "" : " - busy"}
+                          </option>
+                        ))}
+                    </select>
+                    <Button
+                      type="button"
+                      onClick={handleAssignDriver}
+                      disabled={savingDelivery}
+                    >
+                      {savingDelivery ? "Saving..." : "Assign"}
+                    </Button>
+                  </div>
+                </div>
+
+                {viewingOrder.driver && (
+                  <div className="rounded-md bg-fuchsia-50/60 p-2 text-xs dark:bg-fuchsia-950/20">
+                    <p className="font-medium">{viewingOrder.driver.name}</p>
+                    <p className="text-muted-foreground">
+                      {viewingOrder.driver.phone || "No phone"} ·{" "}
+                      {viewingOrder.driver.vehicleType || "Vehicle"} ·{" "}
+                      {viewingOrder.driver.vehicleNumber || "No plate"}
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="delivery-status">Update progress</Label>
+                  <select
+                    id="delivery-status"
+                    value={deliveryStatus}
+                    onChange={(e) => setDeliveryStatus(e.target.value as DeliveryStatus)}
+                    className="w-full rounded border bg-background p-2"
+                    disabled={savingDelivery}
+                  >
+                    {DELIVERY_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {DELIVERY_LABELS[status]}
+                      </option>
+                    ))}
+                  </select>
+                  <Input
+                    value={deliveryNote}
+                    onChange={(e) => setDeliveryNote(e.target.value)}
+                    placeholder="Note for the customer (optional)"
+                    disabled={savingDelivery}
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleUpdateDelivery}
+                    disabled={savingDelivery}
+                  >
+                    {savingDelivery ? "Saving..." : "Save delivery update"}
+                  </Button>
+                </div>
+
+                {(viewingOrder.trackingEvents?.length ?? 0) > 0 && (
+                  <div className="space-y-2 border-t pt-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Recent tracking events
+                    </p>
+                    {viewingOrder.trackingEvents!.map((event) => (
+                      <div key={event.id} className="text-xs">
+                        <span className="font-medium">{event.title}</span>
+                        <span className="text-muted-foreground">
+                          {" "}
+                          · {new Date(event.createdAt).toLocaleString()}
+                        </span>
+                        {event.message && (
+                          <p className="text-muted-foreground">{event.message}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>
@@ -179,7 +376,7 @@ export default function OrderMain({ data }: { data: Order[] }) {
           <select
             value={statusValue}
             onChange={(e) => setStatusValue(e.target.value as OrderStatus)}
-            className="border rounded p-2 w-full"
+            className="w-full rounded border bg-background p-2"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
@@ -203,15 +400,14 @@ export default function OrderMain({ data }: { data: Order[] }) {
         </DialogContent>
       </Dialog>
 
-
       <ConfirmDeleteDialog
-              open={deleteOpen}
-              onOpenChange={setDeleteOpen}
-              onConfirm={confirmDelete}
-              itemName={`order #${deleteTarget?.id}`}
-              loading={deleting}
-              error={deleteError}
-            />
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onConfirm={confirmDelete}
+        itemName={`order #${deleteTarget?.id}`}
+        loading={deleting}
+        error={deleteError}
+      />
     </div>
   );
 }

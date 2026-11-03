@@ -131,6 +131,50 @@ export type OrderStatus =
   | "DELIVERED"
   | "CANCELLED";
 
+export type DeliveryStatus =
+  | "UNASSIGNED"
+  | "ASSIGNED"
+  | "PICKED_UP"
+  | "OUT_FOR_DELIVERY"
+  | "DELIVERED"
+  | "FAILED"
+  | "CANCELLED";
+
+export type DriverStatus = "ACTIVE" | "BLOCKED";
+
+export type Driver = {
+  id: number;
+  name: string;
+  username: string;
+  email?: string | null;
+  phone?: string | null;
+  plainPassword?: string | null;
+  vehicleType?: string | null;
+  vehicleNumber?: string | null;
+  licenseNumber?: string | null;
+  note?: string | null;
+  status: DriverStatus;
+  isAvailable: boolean;
+  lastLoginAt?: string | null;
+  currentLat?: number | null;
+  currentLng?: number | null;
+  locationUpdatedAt?: string | null;
+  createdAt: string | Date;
+  deliveriesCount?: number;
+};
+
+export type TrackingEvent = {
+  id: number;
+  orderId: number;
+  driverId?: number | null;
+  status: DeliveryStatus;
+  title: string;
+  message?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  createdAt: string;
+};
+
 export type OrderItem = {
   id: number;
   orderId?: number;
@@ -157,6 +201,17 @@ export type Order = {
   discountAmount?: number;
   total: number;
   status: OrderStatus;
+  deliveryStatus?: DeliveryStatus;
+  driverId?: number | null;
+  driver?: Driver | null;
+  assignedAt?: string | null;
+  pickedUpAt?: string | null;
+  deliveredAt?: string | null;
+  deliveryNote?: string | null;
+  currentLat?: number | null;
+  currentLng?: number | null;
+  locationUpdatedAt?: string | null;
+  trackingEvents?: TrackingEvent[];
   createdAt: string;
   updatedAt: string;
   items?: OrderItem[];

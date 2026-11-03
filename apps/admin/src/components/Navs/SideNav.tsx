@@ -33,6 +33,7 @@ import {
   Star,
   ChevronsLeft,
   ChevronsRight,
+  Bike,
 } from "lucide-react";
 
 interface SideNavProps {
@@ -68,6 +69,7 @@ const sidebarItems: SidebarItem[] = [
   { title: "Stores", icon: <Store size={18} />, path: "/dashboard/stores" },
   { title: "Customers", icon: <UserRound size={18} />, path: "/dashboard/customers" },
   { title: "Orders", icon: <ShoppingBag size={18} />, path: "/dashboard/orders" },
+  { title: "Drivers", icon: <Bike size={18} />, path: "/dashboard/drivers" },
   { title: "Offers", icon: <Percent size={18} />, path: "/dashboard/offers" },
   { title: "Promos", icon: <Ticket size={18} />, path: "/dashboard/promos" },
   { title: "Reviews", icon: <Star size={18} />, path: "/dashboard/reviews" },

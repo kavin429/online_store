@@ -169,6 +169,85 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  apps/driver:
+    dependencies:
+      '@online-store/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@online-store/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@online-store/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@online-store/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      bcryptjs:
+        specifier: 3.0.3
+        version: 3.0.3
+      class-variance-authority:
+        specifier: 0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: 2.1.1
+        version: 2.1.1
+      lucide-react:
+        specifier: 0.544.0
+        version: 0.544.0(react@18.3.1)
+      next:
+        specifier: 14.2.35
+        version: 14.2.35(react-dom@18.3.1)(react@18.3.1)
+      next-auth:
+        specifier: 4.24.14
+        version: 4.24.14(next@14.2.35)(nodemailer@7.0.13)(react-dom@18.3.1)(react@18.3.1)
+      react:
+        specifier: 18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: 18.3.1
+        version: 18.3.1(react@18.3.1)
+      sonner:
+        specifier: 1.7.4
+        version: 1.7.4(react-dom@18.3.1)(react@18.3.1)
+      tailwind-merge:
+        specifier: 2.6.0
+        version: 2.6.0
+      tailwindcss-animate:
+        specifier: 1.0.7
+        version: 1.0.7(tailwindcss@3.4.19)
+    devDependencies:
+      '@types/bcryptjs':
+        specifier: 2.4.6
+        version: 2.4.6
+      '@types/node':
+        specifier: 20.19.27
+        version: 20.19.27
+      '@types/react':
+        specifier: 18.3.27
+        version: 18.3.27
+      '@types/react-dom':
+        specifier: 18.3.7
+        version: 18.3.7(@types/react@18.3.27)
+      autoprefixer:
+        specifier: 10.4.23
+        version: 10.4.23(postcss@8.5.6)
+      eslint:
+        specifier: 8.57.1
+        version: 8.57.1
+      eslint-config-next:
+        specifier: 14.2.35
+        version: 14.2.35(eslint@8.57.1)(typescript@5.9.3)
+      postcss:
+        specifier: 8.5.6
+        version: 8.5.6
+      tailwindcss:
+        specifier: 3.4.19
+        version: 3.4.19
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
   apps/store:
     dependencies:
       '@auth/prisma-adapter':

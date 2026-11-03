@@ -163,6 +163,7 @@ CREATE TABLE `VariantValue` (
     `unit` VARCHAR(191) NULL,
     `status` ENUM('active', 'inactive') NOT NULL DEFAULT 'active',
     `sortOrder` INTEGER NOT NULL DEFAULT 0,
+    `vendorId` INTEGER NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
@@ -176,11 +177,15 @@ CREATE TABLE `User` (
     `image` VARCHAR(191) NULL,
     `email` VARCHAR(191) NULL,
     `phone` VARCHAR(191) NULL,
+    `phoneCode` VARCHAR(191) NULL,
     `country` VARCHAR(191) NULL,
     `province` VARCHAR(191) NULL,
     `district` VARCHAR(191) NULL,
     `city` VARCHAR(191) NULL,
     `address` VARCHAR(191) NULL,
+    `dateOfBirth` DATETIME(3) NULL,
+    `offersEmail` BOOLEAN NOT NULL DEFAULT true,
+    `offersSms` BOOLEAN NOT NULL DEFAULT false,
     `password` VARCHAR(191) NULL,
     `emailVerified` DATETIME(3) NULL,
     `phoneVerified` BOOLEAN NOT NULL DEFAULT false,
@@ -217,6 +222,25 @@ CREATE TABLE `Account` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `Address` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `userId` INTEGER NOT NULL,
+    `label` VARCHAR(191) NOT NULL,
+    `line` VARCHAR(191) NOT NULL,
+    `country` VARCHAR(191) NOT NULL,
+    `province` VARCHAR(191) NOT NULL,
+    `district` VARCHAR(191) NOT NULL,
+    `city` VARCHAR(191) NOT NULL,
+    `postal` VARCHAR(191) NOT NULL,
+    `isDefault` BOOLEAN NOT NULL DEFAULT false,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `Address_userId_idx`(`userId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `VerificationToken` (
     `identifier` VARCHAR(191) NOT NULL,
     `token` VARCHAR(191) NOT NULL,
@@ -243,9 +267,20 @@ CREATE TABLE `Order` (
     `discountAmount` DOUBLE NOT NULL DEFAULT 0,
     `total` DOUBLE NOT NULL,
     `status` ENUM('PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED') NOT NULL DEFAULT 'PENDING',
+    `trackingNumber` VARCHAR(191) NULL,
+    `driverId` INTEGER NULL,
+    `deliveryStatus` ENUM('UNASSIGNED', 'ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED', 'CANCELLED') NOT NULL DEFAULT 'UNASSIGNED',
+    `assignedAt` DATETIME(3) NULL,
+    `pickedUpAt` DATETIME(3) NULL,
+    `deliveredAt` DATETIME(3) NULL,
+    `deliveryNote` VARCHAR(191) NULL,
+    `currentLat` DOUBLE NULL,
+    `currentLng` DOUBLE NULL,
+    `locationUpdatedAt` DATETIME(3) NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `Order_driverId_deliveryStatus_idx`(`driverId`, `deliveryStatus`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -263,22 +298,81 @@ CREATE TABLE `OrderItem` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `Driver` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `name` VARCHAR(191) NOT NULL,
+    `username` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NULL,
+    `phone` VARCHAR(191) NULL,
+    `password` VARCHAR(191) NOT NULL,
+    `plainPassword` VARCHAR(191) NULL,
+    `vehicleType` VARCHAR(191) NULL,
+    `vehicleNumber` VARCHAR(191) NULL,
+    `licenseNumber` VARCHAR(191) NULL,
+    `note` VARCHAR(191) NULL,
+    `status` ENUM('ACTIVE', 'BLOCKED') NOT NULL DEFAULT 'ACTIVE',
+    `isAvailable` BOOLEAN NOT NULL DEFAULT true,
+    `lastLoginAt` DATETIME(3) NULL,
+    `currentLat` DOUBLE NULL,
+    `currentLng` DOUBLE NULL,
+    `locationUpdatedAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `Driver_username_key`(`username`),
+    UNIQUE INDEX `Driver_email_key`(`email`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `TrackingEvent` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `orderId` INTEGER NOT NULL,
+    `driverId` INTEGER NULL,
+    `status` ENUM('UNASSIGNED', 'ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED', 'CANCELLED') NOT NULL,
+    `title` VARCHAR(191) NOT NULL,
+    `message` VARCHAR(191) NULL,
+    `latitude` DOUBLE NULL,
+    `longitude` DOUBLE NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `TrackingEvent_orderId_createdAt_idx`(`orderId`, `createdAt`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `Review` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `rating` INTEGER NOT NULL,
-    `comment` VARCHAR(191) NULL,
+    `comment` TEXT NULL,
+    `status` ENUM('VISIBLE', 'HIDDEN') NOT NULL DEFAULT 'VISIBLE',
+    `editedAt` DATETIME(3) NULL,
+    `reportStatus` ENUM('NONE', 'OPEN', 'RESOLVED', 'DISMISSED') NOT NULL DEFAULT 'NONE',
+    `reportReason` TEXT NULL,
+    `reportedAt` DATETIME(3) NULL,
+    `reportResolvedAt` DATETIME(3) NULL,
+    `reportedByVendorId` INTEGER NULL,
+    `adminNote` TEXT NULL,
+    `verifiedPurchase` BOOLEAN NOT NULL DEFAULT false,
     `userId` INTEGER NOT NULL,
     `productId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `Review_userId_productId_idx`(`userId`, `productId`),
+    INDEX `Review_productId_status_idx`(`productId`, `status`),
+    INDEX `Review_reportStatus_idx`(`reportStatus`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `ReviewResponse` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `comment` VARCHAR(191) NOT NULL,
+    `comment` TEXT NOT NULL,
+    `authorType` ENUM('CUSTOMER', 'VENDOR', 'ADMIN') NOT NULL DEFAULT 'VENDOR',
+    `userId` INTEGER NULL,
+    `vendorId` INTEGER NULL,
+    `adminId` INTEGER NULL,
     `reviewId` INTEGER NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
@@ -466,6 +560,21 @@ CREATE TABLE `InventoryLog` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
+CREATE TABLE `InventoryBatch` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `productVariantId` INTEGER NOT NULL,
+    `quantity` INTEGER NOT NULL,
+    `remaining` INTEGER NOT NULL,
+    `expiresAt` DATETIME(3) NULL,
+    `batchNumber` VARCHAR(191) NULL,
+    `note` VARCHAR(191) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `InventoryBatch_productVariantId_expiresAt_idx`(`productVariantId`, `expiresAt`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
 CREATE TABLE `PushSubscription` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `userId` INTEGER NOT NULL,
@@ -503,6 +612,8 @@ CREATE TABLE `Offer` (
     `ctaLink` VARCHAR(191) NULL,
     `promoId` INTEGER NULL,
     `vendorId` INTEGER NULL,
+    `basis` ENUM('FESTIVE', 'SPECIAL_DAY', 'ANNIVERSARY', 'NEW_CUSTOMER', 'FLASH_SALE', 'END_OF_SEASON', 'PAYDAY', 'PAYMENT', 'LOYALTY', 'PRODUCT_LAUNCH', 'CLEARANCE', 'BUNDLE', 'CATEGORY', 'OTHER') NULL,
+    `subCategoryId` INTEGER NULL,
     `approvalStatus` ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'APPROVED',
     `reviewNote` VARCHAR(191) NULL,
     `sortOrder` INTEGER NOT NULL DEFAULT 0,
@@ -571,19 +682,46 @@ ALTER TABLE `ProductVariantValue` ADD CONSTRAINT `ProductVariantValue_variantVal
 ALTER TABLE `VariantValue` ADD CONSTRAINT `VariantValue_variantTypeId_fkey` FOREIGN KEY (`variantTypeId`) REFERENCES `VariantType`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `VariantValue` ADD CONSTRAINT `VariantValue_vendorId_fkey` FOREIGN KEY (`vendorId`) REFERENCES `Vendor`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `Account` ADD CONSTRAINT `Account_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Address` ADD CONSTRAINT `Address_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Order` ADD CONSTRAINT `Order_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `Order` ADD CONSTRAINT `Order_driverId_fkey` FOREIGN KEY (`driverId`) REFERENCES `Driver`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `OrderItem` ADD CONSTRAINT `OrderItem_orderId_fkey` FOREIGN KEY (`orderId`) REFERENCES `Order`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `TrackingEvent` ADD CONSTRAINT `TrackingEvent_orderId_fkey` FOREIGN KEY (`orderId`) REFERENCES `Order`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `TrackingEvent` ADD CONSTRAINT `TrackingEvent_driverId_fkey` FOREIGN KEY (`driverId`) REFERENCES `Driver`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Review` ADD CONSTRAINT `Review_reportedByVendorId_fkey` FOREIGN KEY (`reportedByVendorId`) REFERENCES `Vendor`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Review` ADD CONSTRAINT `Review_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Review` ADD CONSTRAINT `Review_productId_fkey` FOREIGN KEY (`productId`) REFERENCES `Product`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ReviewResponse` ADD CONSTRAINT `ReviewResponse_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ReviewResponse` ADD CONSTRAINT `ReviewResponse_vendorId_fkey` FOREIGN KEY (`vendorId`) REFERENCES `Vendor`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ReviewResponse` ADD CONSTRAINT `ReviewResponse_adminId_fkey` FOREIGN KEY (`adminId`) REFERENCES `Admin`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `ReviewResponse` ADD CONSTRAINT `ReviewResponse_reviewId_fkey` FOREIGN KEY (`reviewId`) REFERENCES `Review`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -640,6 +778,9 @@ ALTER TABLE `ShippingRate` ADD CONSTRAINT `ShippingRate_zoneId_fkey` FOREIGN KEY
 ALTER TABLE `InventoryLog` ADD CONSTRAINT `InventoryLog_productVariantId_fkey` FOREIGN KEY (`productVariantId`) REFERENCES `ProductVariant`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE `InventoryBatch` ADD CONSTRAINT `InventoryBatch_productVariantId_fkey` FOREIGN KEY (`productVariantId`) REFERENCES `ProductVariant`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE `PushSubscription` ADD CONSTRAINT `PushSubscription_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -647,6 +788,9 @@ ALTER TABLE `Offer` ADD CONSTRAINT `Offer_promoId_fkey` FOREIGN KEY (`promoId`) 
 
 -- AddForeignKey
 ALTER TABLE `Offer` ADD CONSTRAINT `Offer_vendorId_fkey` FOREIGN KEY (`vendorId`) REFERENCES `Vendor`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Offer` ADD CONSTRAINT `Offer_subCategoryId_fkey` FOREIGN KEY (`subCategoryId`) REFERENCES `SubCategory`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `OfferProduct` ADD CONSTRAINT `OfferProduct_offerId_fkey` FOREIGN KEY (`offerId`) REFERENCES `Offer`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

@@ -110,6 +110,34 @@ export const columns = (
     },
 
     {
+      id: "delivery",
+      header: "Delivery",
+      cell: ({ row }) => {
+        const order = row.original;
+        const label = (order.deliveryStatus || "UNASSIGNED").replaceAll("_", " ");
+        const tone =
+          order.deliveryStatus === "DELIVERED"
+            ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300"
+            : order.deliveryStatus === "FAILED" || order.deliveryStatus === "CANCELLED"
+              ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
+              : order.deliveryStatus && order.deliveryStatus !== "UNASSIGNED"
+                ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                : "bg-gray-100 text-gray-600 dark:bg-neutral-800 dark:text-gray-300";
+
+        return (
+          <div className="space-y-1">
+            <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone}`}>
+              {label}
+            </span>
+            <p className="text-xs text-muted-foreground">
+              {order.driver ? order.driver.name : "No driver"}
+            </p>
+          </div>
+        );
+      },
+    },
+
+    {
       accessorKey: "createdAt",
       header: "Placed",
       cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
