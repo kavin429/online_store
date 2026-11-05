@@ -179,7 +179,7 @@ export default function DriversMain({ data }: { data: Driver[] }) {
 
           <p className="text-sm text-muted-foreground">
             Give these credentials to the driver. They sign in at the driver app
-            (usually <span className="font-mono">http://localhost:3003</span>).
+            (usually <span className="font-mono">http://driver.trinityglobalcapitalltd.com</span>).
           </p>
 
           <CopyValue

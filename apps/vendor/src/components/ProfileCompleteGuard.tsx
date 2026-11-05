@@ -10,13 +10,13 @@ export default function ProfileCompleteGuard() {
   const redirected = useRef(false);
 
   useEffect(() => {
-    if (pathname !== "/dashboard/settings" && !redirected.current) {
+    if (pathname !== "/dashboard/store" && !redirected.current) {
       redirected.current = true;
-      router.replace("/dashboard/settings");
+      router.replace("/dashboard/store");
     }
   }, [pathname, router]);
 
-  if (pathname === "/dashboard/settings") {
+  if (pathname === "/dashboard/store") {
     return null;
   }
 

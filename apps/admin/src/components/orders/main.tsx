@@ -45,7 +45,13 @@ const DELIVERY_LABELS: Record<DeliveryStatus, string> = {
   CANCELLED: "Cancelled",
 };
 
-export default function OrderMain({ data }: { data: Order[] }) {
+export default function OrderMain({
+  data,
+  embedded = false,
+}: {
+  data: Order[];
+  embedded?: boolean;
+}) {
   const [orders, setOrders] = useState<Order[]>(data);
 
   // View details
@@ -201,10 +207,12 @@ export default function OrderMain({ data }: { data: Order[] }) {
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Orders</h1>
-      </div>
+    <div className={embedded ? "space-y-4" : "p-6 space-y-4"}>
+      {!embedded && (
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Orders</h1>
+        </div>
+      )}
 
       <DataTable
         columns={columns(handleView, handleEditStatus, handleDeleteClick)}

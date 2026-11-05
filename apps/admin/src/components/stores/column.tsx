@@ -1,148 +1,114 @@
+"use client";
+
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@online-store/ui/button";
-import { Badge } from "@online-store/ui/badge";
-import {
-  Clock,
-  CheckCircle2,
-  Truck,
-  PackageCheck,
-  XCircle,
-  Edit,
-  Trash2,
-} from "lucide-react";
-import type { Order, OrderItem, OrderStatus } from "@/lib/types";
+import { Eye, Package, Settings2, Store } from "lucide-react";
+import type { Vendor } from "@/lib/types";
+import StatusBadge from "@/components/comman/status-badge";
 
-export type { Order, OrderItem, OrderStatus }; // re-export for backwards compatibility
+export type Store = Vendor;
 
-const statusBadge = (status: OrderStatus) => {
-  switch (status) {
-    case "PENDING":
-      return (
-        <Badge className="gap-1 bg-yellow-500 text-white hover:bg-yellow-500/90">
-          <Clock className="w-3 h-3" /> Pending
-        </Badge>
-      );
-    case "CONFIRMED":
-      return (
-        <Badge className="gap-1 bg-blue-600 hover:bg-blue-600/90">
-          <CheckCircle2 className="w-3 h-3" /> Confirmed
-        </Badge>
-      );
-    case "SHIPPED":
-      return (
-        <Badge className="gap-1 bg-indigo-600 hover:bg-indigo-600/90">
-          <Truck className="w-3 h-3" /> Shipped
-        </Badge>
-      );
-    case "DELIVERED":
-      return (
-        <Badge className="gap-1 bg-green-600 hover:bg-green-600/90">
-          <PackageCheck className="w-3 h-3" /> Delivered
-        </Badge>
-      );
-    case "CANCELLED":
-      return (
-        <Badge className="gap-1 bg-destructive text-destructive-foreground hover:bg-destructive/90">
-          <XCircle className="w-3 h-3" /> Cancelled
-        </Badge>
-      );
-    default:
-      return <Badge >{status}</Badge>;
-  }
-};
+export const storeDisplayName = (store: Store) =>
+  store.vendorSettings?.storeName?.trim() || store.name?.trim() || `Store #${store.id}`;
 
-const formatCurrency = (value: number) =>
-  `Rs. ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+export const storeLogo = (store: Store) =>
+  store.vendorSettings?.storeLogo || store.image || null;
 
 export const columns = (
-  onView: (order: Order) => void,
-  onEditStatus: (order: Order) => void,
-  onDelete: (order: Order) => void,
-): ColumnDef<Order>[] => [
+  onView: (store: Store) => void,
+  onManage: (store: Store) => void,
+): ColumnDef<Store>[] => [
   {
-    accessorKey: "id",
-    header: "Order",
+    id: "storeName",
+    accessorFn: (row) => storeDisplayName(row),
+    header: "Store",
     cell: ({ row }) => {
-      const order = row.original;
+      const store = row.original;
+      const logo = storeLogo(store);
+
       return (
         <button
           type="button"
-          onClick={() => onView(order)}
-          className="text-sm font-medium text-fuchsia-600 dark:text-fuchsia-400 hover:underline"
+          onClick={() => onView(store)}
+          className="flex items-center gap-3 text-left"
         >
-          #{order.id}
+          {logo ? (
+            <img
+              src={logo}
+              alt={storeDisplayName(store)}
+              className="h-10 w-10 rounded-lg border object-cover"
+            />
+          ) : (
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg border bg-muted text-muted-foreground">
+              <Store className="h-4 w-4" />
+            </div>
+          )}
+          <div className="min-w-0">
+            <p className="truncate font-medium">{storeDisplayName(store)}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {store.vendorSettings?.storeName ? store.name || "Vendor" : "Store profile not set up"}
+            </p>
+          </div>
         </button>
       );
     },
   },
 
   {
-    accessorKey: "fullName",
-    header: "Customer",
+    accessorKey: "email",
+    header: "Contact",
     cell: ({ row }) => {
-      const order = row.original;
+      const store = row.original;
       return (
-        <div className="flex items-center gap-3">
-          {order.user?.image ? (
-            <img
-              src={order.user.image}
-              alt={order.fullName}
-              className="w-9 h-9 rounded-full object-cover"
-            />
-          ) : (
-            <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
-              {order.fullName?.[0]?.toUpperCase() || "?"}
-            </div>
-          )}
-          <div>
-            <p className="font-medium">{order.fullName}</p>
-            <p className="text-xs text-muted-foreground">{order.email}</p>
-          </div>
+        <div className="flex flex-col text-sm">
+          <span>{store.email || "—"}</span>
+          <span className="text-muted-foreground">{store.phone || "—"}</span>
         </div>
       );
     },
   },
 
   {
-    id: "items",
-    header: "Items",
+    accessorKey: "city",
+    header: "Location",
     cell: ({ row }) => {
-      const items = row.original.items || [];
-      const totalQty = items.reduce((sum, i) => sum + i.quantity, 0);
-      return (
-        <span className="text-sm">
-          {items.length} product{items.length !== 1 ? "s" : ""}
-          <span className="text-muted-foreground"> ({totalQty} qty)</span>
-        </span>
-      );
+      const store = row.original;
+      const location = [store.city, store.province, store.country]
+        .filter(Boolean)
+        .join(", ");
+      return <span className="text-sm">{location || "—"}</span>;
     },
   },
 
   {
-    accessorKey: "total",
-    header: "Total",
+    accessorKey: "productsCount",
+    header: "Products",
     cell: ({ row }) => (
-      <span className="font-medium">{formatCurrency(row.original.total)}</span>
-    ),
-  },
-
-  {
-    accessorKey: "paymentMethod",
-    header: "Payment",
-    cell: ({ row }) => (
-      <span className="text-sm text-muted-foreground">{row.original.paymentMethod}</span>
+      <button
+        type="button"
+        onClick={() => onView(row.original)}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-fuchsia-600 hover:underline dark:text-fuchsia-400"
+      >
+        <Package className="h-3.5 w-3.5" />
+        {row.original.productsCount ?? 0}
+      </button>
     ),
   },
 
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => statusBadge(row.original.status),
+    cell: ({ row }) => (
+      <StatusBadge
+        status={row.original.status}
+        onClick={() => onManage(row.original)}
+      />
+    ),
   },
 
   {
     accessorKey: "createdAt",
-    header: "Placed",
+    header: "Joined",
     cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(),
   },
 
@@ -150,14 +116,14 @@ export const columns = (
     id: "actions",
     header: "Actions",
     cell: ({ row }) => {
-      const order = row.original;
+      const store = row.original;
       return (
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => onEditStatus(order)}>
-            <Edit className="w-4 h-4 text-fuchsia-500 dark:text-fuchsia-400" />
+          <Button variant="edit" size="iconSm" onClick={() => onView(store)}>
+            <Eye className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={() => onDelete(order)}>
-            <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
+          <Button variant="outline" size="iconSm" onClick={() => onManage(store)}>
+            <Settings2 className="h-4 w-4" />
           </Button>
         </div>
       );

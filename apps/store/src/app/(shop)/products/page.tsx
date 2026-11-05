@@ -13,6 +13,11 @@ interface Product {
   featured: boolean;
   images: { id: number; url: string }[];
   category: { id: number; name: string };
+  vendor?: {
+    id: number;
+    name: string;
+    vendorSettings?: { storeName?: string | null } | null;
+  } | null;
   rating?: number;
   store?: string;
   isNew?: boolean;
@@ -21,6 +26,7 @@ interface Product {
 function ProductsContent() {
   const searchParams = useSearchParams();
   const categoryId = searchParams.get("categoryId") || searchParams.get("category");
+  const vendorId = searchParams.get("vendorId") || searchParams.get("storeId");
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,16 +35,21 @@ function ProductsContent() {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const query = categoryId ? `?categoryId=${categoryId}` : "";
+        const params = new URLSearchParams();
+        if (categoryId) params.set("categoryId", categoryId);
+        if (vendorId) params.set("vendorId", vendorId);
+        const query = params.toString() ? `?${params.toString()}` : "";
+
         const res = await fetch(`/api/products${query}`);
         const data = await res.json();
         setProducts(
           (data.data || []).map((p: Product) => ({
             ...p,
             rating: Number((Math.random() * 2 + 3).toFixed(1)),
-            store: ["Nike Store", "Fashion Hub", "Sneaker World", "Urban Feet", "Shoe Palace"][
-              Math.floor(Math.random() * 5)
-            ],
+            store:
+              p.vendor?.vendorSettings?.storeName ||
+              p.vendor?.name ||
+              undefined,
             isNew: Math.random() > 0.5,
           }))
         );
@@ -51,7 +62,7 @@ function ProductsContent() {
     };
 
     fetchProducts();
-  }, [categoryId]);
+  }, [categoryId, vendorId]);
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 mt-5">

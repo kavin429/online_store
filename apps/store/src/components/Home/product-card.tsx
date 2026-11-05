@@ -133,6 +133,11 @@ export default function ProductCard({ product }: ProductCardProps) {
                   <h3 className="text-sm sm:text-base font-bold uppercase tracking-wide text-zinc-900 dark:text-zinc-100 line-clamp-1 w-full">
                     {product.name}
                   </h3>
+                  {product.store && (
+                    <p className="mt-0.5 text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-fuchsia-600 dark:text-fuchsia-400 line-clamp-1 w-full">
+                      {product.store}
+                    </p>
+                  )}
                   <p className="mt-1 text-[11px] sm:text-xs text-zinc-400 dark:text-zinc-500 line-clamp-2 min-h-[1.75rem] sm:min-h-[2rem] w-full">
                     {product.description ||
                       "Lorem ipsum dolor sit amet, consectetur adipis."}

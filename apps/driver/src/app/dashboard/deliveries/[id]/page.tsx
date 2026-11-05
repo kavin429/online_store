@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Card } from "@online-store/ui/card";
-import { Badge } from "@online-store/ui/badge";
+import { StatusBadge } from "@online-store/ui/status-badge";
 import { prisma } from "@/lib/prisma";
 import { currentDriver } from "@/lib/auth";
 import { DELIVERY_LABELS, type DeliveryStatus } from "@/lib/delivery";
@@ -11,16 +11,6 @@ import DeliveryActions from "@/components/DeliveryActions";
 import LocationTracker from "@/components/LocationTracker";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_STYLES: Record<DeliveryStatus, string> = {
-  UNASSIGNED: "bg-gray-100 text-gray-600",
-  ASSIGNED: "bg-blue-100 text-blue-700",
-  PICKED_UP: "bg-indigo-100 text-indigo-700",
-  OUT_FOR_DELIVERY: "bg-fuchsia-100 text-fuchsia-700",
-  DELIVERED: "bg-green-100 text-green-700",
-  FAILED: "bg-red-100 text-red-700",
-  CANCELLED: "bg-gray-200 text-gray-700",
-};
 
 export default async function DeliveryDetailPage({
   params,
@@ -57,9 +47,10 @@ export default async function DeliveryDetailPage({
         >
           <ArrowLeft className="h-4 w-4" /> Back to deliveries
         </Link>
-        <Badge className={`border-0 ${STATUS_STYLES[status]}`}>
-          {DELIVERY_LABELS[status]}
-        </Badge>
+        <StatusBadge
+          status={status}
+          label={DELIVERY_LABELS[status]}
+        />
       </div>
 
       <div>

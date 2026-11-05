@@ -374,6 +374,88 @@ export type Offer = {
   updatedAt: string;
 };
 
+/* ── Stock quotations (admin ↔ vendor purchase flow) ── */
+export type QuotationStatus =
+  | "REQUESTED"
+  | "QUOTED"
+  | "ACCEPTED"
+  | "READY_FOR_PICKUP"
+  | "DRIVER_ASSIGNED"
+  | "PICKED_UP"
+  | "RECEIVED"
+  | "REJECTED"
+  | "CANCELLED";
+
+export type QuotationItem = {
+  id: number;
+  quotationId: number;
+  productId: number;
+  productVariantId?: number | null;
+  name: string;
+  quantity: number;
+  requestedUnitPrice?: number | null;
+  quotedUnitPrice?: number | null;
+};
+
+export type QuotationEvent = {
+  id: number;
+  quotationId: number;
+  status: QuotationStatus;
+  title: string;
+  message?: string | null;
+  actor: "ADMIN" | "VENDOR" | "SYSTEM" | string;
+  createdAt: string;
+};
+
+export type Quotation = {
+  id: number;
+  vendorId: number;
+  vendor: { id: number; name: string; email?: string | null; phone?: string | null };
+  adminId?: number | null;
+  admin?: { id: number; name: string; email?: string | null } | null;
+  status: QuotationStatus;
+  requestNote?: string | null;
+  vendorNote?: string | null;
+  adminNote?: string | null;
+  rejectionReason?: string | null;
+  quotedTotal: number;
+  acceptedTotal?: number | null;
+  pickupDate?: string | null;
+  acceptedAt?: string | null;
+  readyAt?: string | null;
+  assignedAt?: string | null;
+  pickedUpAt?: string | null;
+  receivedAt?: string | null;
+  driverId?: number | null;
+  driver?: {
+    id: number;
+    name: string;
+    username?: string;
+    phone?: string | null;
+    vehicleType?: string | null;
+    vehicleNumber?: string | null;
+    status?: string;
+  } | null;
+  items: QuotationItem[];
+  events: QuotationEvent[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type QuotationProductOption = {
+  id: number;
+  name: string;
+  vendorId: number;
+  variants: { id: number; sku?: string | null; stock: number }[];
+};
+
+export type QuotationVendorOption = {
+  id: number;
+  name: string;
+  email?: string | null;
+  status: string;
+};
+
 /* ── Reviews ── */
 export type ReviewStatus = "VISIBLE" | "HIDDEN";
 export type ReviewReportStatus = "NONE" | "OPEN" | "RESOLVED" | "DISMISSED";

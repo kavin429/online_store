@@ -1,16 +1,52 @@
-import OrderMain from "@/components/orders/main";
+import StoreMain from "@/components/stores/main";
 import { prisma } from "@/lib/prisma";
 
-export default async function OrdersPage() {
-  const orders = await prisma.order.findMany({
+// Store profiles are edited by vendors, so always read fresh data.
+export const dynamic = "force-dynamic";
+
+export default async function StoresPage() {
+  const vendors = await prisma.vendor.findMany({
     orderBy: { createdAt: "desc" },
-    include: {
-      user: {
-        select: { id: true, name: true, email: true, image: true },
+    select: {
+      id: true,
+      name: true,
+      image: true,
+      email: true,
+      phone: true,
+      country: true,
+      province: true,
+      district: true,
+      city: true,
+      address: true,
+      status: true,
+      blockReason: true,
+      blockedAt: true,
+      createdAt: true,
+      vendorSettings: {
+        select: {
+          id: true,
+          storeName: true,
+          storeLogo: true,
+          storeBanner: true,
+          description: true,
+          taxId: true,
+          businessReg: true,
+          bankName: true,
+          accountName: true,
+          accountNumber: true,
+          branch: true,
+        },
       },
-      items: true,
+      _count: { select: { products: true, payouts: true, notifications: true } },
     },
   });
 
-  return <OrderMain data={JSON.parse(JSON.stringify(orders))} />;
+  const data = vendors.map(({ _count, ...vendor }) => ({
+    ...vendor,
+    productsCount: _count.products,
+    payoutsCount: _count.payouts,
+    notificationsCount: _count.notifications,
+  }));
+
+  return <StoreMain data={JSON.parse(JSON.stringify(data))} />;
 }

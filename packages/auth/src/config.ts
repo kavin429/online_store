@@ -1,5 +1,5 @@
 import type { NextAuthOptions } from "next-auth";
-import type { Adapter } from "next-auth/adapters";
+import type { Adapter, AdapterUser } from "next-auth/adapters";
 import type { Provider } from "next-auth/providers/index";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -150,6 +150,53 @@ async function authorize(
 }
 
 /**
+ * Google supplies a display name, but `User.name` is unique and also acts as
+ * the username. If that name is already taken, retry with a numeric suffix
+ * instead of failing the whole OAuth callback.
+ */
+function withUniqueUserName(adapter: Adapter): Adapter {
+  const createUser = adapter.createUser as unknown as
+    | ((user: Omit<AdapterUser, "id">) => Promise<AdapterUser>)
+    | undefined;
+
+  if (!createUser) return adapter;
+
+  const createUserWithUniqueName = async (
+    data: Omit<AdapterUser, "id">
+  ): Promise<AdapterUser> => {
+    const requested = data.name?.trim();
+    if (!requested) return createUser(data);
+
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const name = attempt === 0 ? requested : `${requested}-${attempt + 1}`;
+
+      try {
+        return await createUser({ ...data, name });
+      } catch (error: any) {
+        const target = Array.isArray(error?.meta?.target)
+          ? error.meta.target.join(",")
+          : String(error?.meta?.target ?? "");
+
+        // Only retry when the clash is on the unique username column.
+        if (error?.code !== "P2002" || !target.includes("name")) {
+          throw error;
+        }
+      }
+    }
+
+    return createUser({
+      ...data,
+      name: `${requested}-${Math.random().toString(36).slice(2, 8)}`,
+    });
+  };
+
+  return {
+    ...adapter,
+    createUser: createUserWithUniqueName as Adapter["createUser"],
+  };
+}
+
+/**
  * Builds the NextAuth configuration for one app. Every app uses the same
  * secret, so a session issued anywhere is verifiable everywhere - the
  * per-app middleware is what enforces the role boundary.
@@ -180,13 +227,20 @@ export function buildAuthOptions(input: AuthOptionsInput): NextAuthOptions {
       GoogleProvider({
         clientId: process.env.GOOGLE_CLIENT_ID ?? "",
         clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+        // If a customer already signed up with email + password, a Google
+        // sign-in with the same verified email links to that account instead
+        // of failing with OAuthAccountNotLinked.
+        allowDangerousEmailAccountLinking: true,
+        authorization: {
+          params: { prompt: "select_account" },
+        },
       })
     );
   }
 
   return {
     adapter: input.usePrismaAdapter
-      ? (PrismaAdapter(prisma) as unknown as Adapter)
+      ? withUniqueUserName(PrismaAdapter(prisma) as unknown as Adapter)
       : undefined,
 
     session: {

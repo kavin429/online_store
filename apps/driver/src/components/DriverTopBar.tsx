@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { Bike, History, LayoutDashboard, LogOut, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ModeToggle } from "@/components/misc/themeToggler";
 
 const NAV = [
   { href: "/dashboard", label: "Deliveries", icon: LayoutDashboard },
@@ -28,29 +29,33 @@ export default function DriverTopBar({ name }: { name: string }) {
         </Link>
 
         <div className="flex items-center gap-1">
-          {NAV.map((item) => {
-            const active =
-              item.href === "/dashboard"
-                ? pathname === "/dashboard" || pathname.startsWith("/dashboard/deliveries")
-                : pathname.startsWith(item.href);
-            const Icon = item.icon;
+          <div className="hidden items-center gap-1 sm:flex">
+            {NAV.map((item) => {
+              const active =
+                item.href === "/dashboard"
+                  ? pathname === "/dashboard" || pathname.startsWith("/dashboard/deliveries")
+                  : pathname.startsWith(item.href);
+              const Icon = item.icon;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm",
-                  active
-                    ? "bg-fuchsia-600 text-white"
-                    : "text-gray-600 hover:bg-fuchsia-50 hover:text-fuchsia-700 dark:text-gray-300 dark:hover:bg-fuchsia-950/40",
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{item.label}</span>
-              </Link>
-            );
-          })}
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm",
+                    active
+                      ? "bg-fuchsia-600 text-white"
+                      : "text-gray-600 hover:bg-fuchsia-50 hover:text-fuchsia-700 dark:text-gray-300 dark:hover:bg-fuchsia-950/40",
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="hidden sm:inline">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          <ModeToggle />
 
           <button
             type="button"

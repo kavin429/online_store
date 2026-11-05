@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Badge } from "@online-store/ui/badge";
+import { StatusBadge } from "@online-store/ui/status-badge";
 import { Button } from "@online-store/ui/button";
 import { Card } from "@online-store/ui/card";
 import { toast } from "sonner";
@@ -21,18 +21,7 @@ import {
   type DeliveryStatus,
 } from "@/lib/delivery";
 import { DriverOrder } from "@/lib/types";
-import { formatLKR, cn } from "@/lib/utils";
-
-const STATUS_STYLES: Record<DeliveryStatus, string> = {
-  UNASSIGNED: "bg-gray-100 text-gray-600 dark:bg-neutral-800 dark:text-gray-300",
-  ASSIGNED: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-  PICKED_UP: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300",
-  OUT_FOR_DELIVERY:
-    "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300",
-  DELIVERED: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
-  FAILED: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
-  CANCELLED: "bg-gray-200 text-gray-700 dark:bg-neutral-800 dark:text-gray-300",
-};
+import { formatLKR } from "@/lib/utils";
 
 const ACTION_LABELS: Partial<Record<DeliveryStatus, string>> = {
   PICKED_UP: "Mark picked up",
@@ -103,9 +92,10 @@ export default function DeliveriesList({ orders }: { orders: DriverOrder[] }) {
                 <div className="flex items-center gap-2">
                   <Package className="h-4 w-4 text-fuchsia-600" />
                   <p className="font-semibold">Order #{order.id}</p>
-                  <Badge className={cn("border-0", STATUS_STYLES[order.deliveryStatus])}>
-                    {DELIVERY_LABELS[order.deliveryStatus]}
-                  </Badge>
+                  <StatusBadge
+                    status={order.deliveryStatus}
+                    label={DELIVERY_LABELS[order.deliveryStatus]}
+                  />
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {itemCount} item{itemCount === 1 ? "" : "s"} ·{" "}

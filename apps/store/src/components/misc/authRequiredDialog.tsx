@@ -59,7 +59,7 @@ export default function AuthRequiredDialog({
             Log In
           </Button>
 
-          <Link href="/signup" className="w-full">
+          <Link href="/register" className="w-full">
             <Button variant="outline" className="w-full">
               Create an account
             </Button>

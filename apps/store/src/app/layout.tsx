@@ -41,7 +41,9 @@ export default function RootLayout({
             </CartProvider>
 
             <Toaster position="bottom-center" />
-            <Footer/>
+            <div className="pb-20 lg:pb-0">
+              <Footer/>
+            </div>
           </ThemeProvider>
         </Providers>
       </body>

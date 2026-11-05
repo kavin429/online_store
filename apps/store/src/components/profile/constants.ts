@@ -103,58 +103,9 @@ export const TABS: {
   { key: "settings", label: "Settings", icon: Settings, desc: "Profile, phone, addresses and account." },
 ];
 
-export const DIAL_CODES = [
-  { dial: "+94", label: "Sri Lanka" },
-  { dial: "+91", label: "India" },
-  { dial: "+977", label: "Nepal" },
-  { dial: "+880", label: "Bangladesh" },
-  { dial: "+92", label: "Pakistan" },
-  { dial: "+971", label: "UAE" },
-  { dial: "+65", label: "Singapore" },
-  { dial: "+60", label: "Malaysia" },
-  { dial: "+44", label: "United Kingdom" },
-  { dial: "+1", label: "United States" },
-  { dial: "+61", label: "Australia" },
-];
-
 /**
  * Country → Province → District → Cities reference data used by the address
- * dialog. Countries themselves come from the Country table when available;
- * this map provides the province/district/city cascade for supported regions.
+ * dialog and signup form. Kept in `@/lib/geo` so client forms and API routes
+ * share one source of truth.
  */
-export const GEO: Record<string, Record<string, Record<string, string[]>>> = {
-  "Sri Lanka": {
-    "Western Province": {
-      Colombo: ["Colombo", "Dehiwala", "Moratuwa", "Maharagama"],
-      Gampaha: ["Negombo", "Gampaha", "Ja-Ela", "Wattala"],
-      Kalutara: ["Kalutara", "Panadura", "Horana"],
-    },
-    "Central Province": {
-      Kandy: ["Kandy", "Peradeniya", "Gampola"],
-      Matale: ["Matale", "Dambulla", "Sigiriya"],
-    },
-    "Southern Province": {
-      Galle: ["Galle", "Hikkaduwa", "Ambalangoda"],
-      Matara: ["Matara", "Weligama", "Dikwella"],
-    },
-  },
-  India: {
-    "Tamil Nadu": {
-      Chennai: ["Chennai", "Tambaram"],
-      Coimbatore: ["Coimbatore", "Pollachi"],
-    },
-    Kerala: {
-      Ernakulam: ["Kochi", "Aluva"],
-      Thiruvananthapuram: ["Thiruvananthapuram", "Attingal"],
-    },
-  },
-  Nepal: {
-    "Bagmati Province": {
-      Kathmandu: ["Kathmandu", "Kirtipur"],
-      Lalitpur: ["Lalitpur", "Godawari"],
-    },
-    "Gandaki Province": {
-      Kaski: ["Pokhara", "Lekhnath"],
-    },
-  },
-};
+export { GEO, DIAL_CODES, COUNTRY_DIAL, PHONE_RULES, SUPPORTED_COUNTRIES, validatePhoneForCountry, phoneHint } from "@/lib/geo";

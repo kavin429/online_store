@@ -1,38 +1,49 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { normalizeEmail } from "@/lib/validators/auth";
 
+/**
+ * Legacy credentials endpoint. The store UI signs in through NextAuth, but
+ * external clients still call this route, so it follows the same rules:
+ * normalised email, a generic failure message, and blocked-account handling.
+ */
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const email = normalizeEmail(String(body?.email ?? ""));
+    const password = String(body?.password ?? "");
 
-    const user = await prisma.user.findUnique({
-      where: {
-        email,
-      },
-    });
-
-    if (!user) {
+    if (!email || !password) {
       return NextResponse.json(
-        { message: "User not found" },
-        { status: 404 }
-      );
-    }
-
-    if (!user.password) {
-      return NextResponse.json(
-        { message: "This account doesn't have a password." },
+        { message: "Email and password are required." },
         { status: 400 }
       );
     }
-    const validPassword = await bcrypt.compare(
-      password,
-      user.password
-    );
+
+    const user = await prisma.user.findFirst({
+      where: { email },
+    });
+
+    if (!user || !user.password) {
+      return NextResponse.json(
+        { message: "Invalid email or password." },
+        { status: 401 }
+      );
+    }
+
+    if (user.status === "BLOCKED") {
+      return NextResponse.json(
+        { message: "This account has been blocked. Please contact support." },
+        { status: 403 }
+      );
+    }
+
+    const validPassword = await bcrypt.compare(password, user.password);
 
     if (!validPassword) {
       return NextResponse.json(
-        { message: "Invalid password" },
+        { message: "Invalid email or password." },
         { status: 401 }
       );
     }
@@ -45,8 +56,8 @@ export async function POST(req: Request) {
         email: user.email,
       },
     });
-
   } catch (error) {
+    console.error("LOGIN ERROR:", error);
     return NextResponse.json(
       { message: "Server error" },
       { status: 500 }

@@ -138,7 +138,7 @@ export function VendorProfileForm({
             Contact details
           </h2>
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/dashboard/settings">
+            <Link href="/dashboard/store">
               <Settings className="mr-1.5 h-4 w-4" /> Store settings
             </Link>
           </Button>

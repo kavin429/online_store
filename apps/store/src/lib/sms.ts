@@ -19,9 +19,14 @@ function getClient() {
   return client;
 }
 
-export function normalizePhone(phone: string) {
+export function normalizePhone(phone: string, dialCode?: string) {
   const value = phone.trim();
-  const countryCode = (process.env.DEFAULT_COUNTRY_CODE || "").replace(/\D/g, "");
+  // Prefer the country the customer picked; fall back to the deployment
+  // default for older callers that only send a number.
+  const countryCode = (dialCode || process.env.DEFAULT_COUNTRY_CODE || "").replace(
+    /\D/g,
+    ""
+  );
 
   if (value.startsWith("+")) {
     return `+${value.slice(1).replace(/\D/g, "")}`;

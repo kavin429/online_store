@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@online-store/ui/button";
 import { Input } from "@online-store/ui/input";
 import { Label } from "@online-store/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@online-store/ui/tabs";
 import { toast } from "sonner";
-import { Save, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Save,
+  Store as StoreIcon,
+} from "lucide-react";
 
 type VendorSettings = {
   storeName: string;
@@ -44,8 +48,20 @@ const REQUIRED_FIELDS: (keyof VendorSettings)[] = [
   "accountNumber",
 ];
 
+function isValidImageUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return true;
+  if (trimmed.startsWith("/") || trimmed.startsWith("data:image/")) return true;
+
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export default function SettingsMain() {
-  const router = useRouter();
   const [settings, setSettings] = useState<VendorSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -81,7 +97,40 @@ export default function SettingsMain() {
     (field) => !settings[field]?.trim()
   );
 
+  const storeErrors = useMemo(() => {
+    const errors: Partial<Record<keyof VendorSettings, string>> = {};
+
+    if (!settings.storeName.trim()) {
+      errors.storeName = "Store name is required.";
+    } else if (settings.storeName.trim().length < 2) {
+      errors.storeName = "Store name must be at least 2 characters.";
+    }
+
+    if (!settings.description.trim()) {
+      errors.description = "Store description is required.";
+    } else if (settings.description.trim().length < 10) {
+      errors.description = "Description must be at least 10 characters.";
+    }
+
+    if (!isValidImageUrl(settings.storeLogo)) {
+      errors.storeLogo = "Enter a valid image URL.";
+    }
+
+    if (!isValidImageUrl(settings.storeBanner)) {
+      errors.storeBanner = "Enter a valid image URL.";
+    }
+
+    return errors;
+  }, [settings]);
+
+  const hasStoreErrors = Object.keys(storeErrors).length > 0;
+
   const handleSave = async () => {
+    if (hasStoreErrors) {
+      toast.error("Please fix the store profile fields before saving.");
+      return;
+    }
+
     setSaving(true);
     try {
       const res = await fetch("/api/vendor-settings", {
@@ -91,12 +140,9 @@ export default function SettingsMain() {
       });
       if (!res.ok) throw new Error("Failed to save");
       const data = await res.json();
-      toast.success("Settings saved successfully");
+      toast.success("Store settings saved successfully");
       if (data.isProfileComplete) {
-        toast.success("Profile completed! Redirecting to dashboard...");
-        setTimeout(() => {
-          router.push("/dashboard/overview");
-        }, 1500);
+        toast.success("Store profile complete!");
       }
     } catch {
       toast.error("Failed to save settings");
@@ -111,17 +157,22 @@ export default function SettingsMain() {
 
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
-        <div className="h-8 w-48 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
-        <div className="h-64 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
+      <div className="space-y-4 p-6">
+        <div className="h-8 w-48 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+        <div className="h-64 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Store Settings</h1>
+    <div className="space-y-4 p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">My Store</h1>
+          <p className="text-sm text-muted-foreground">
+            This is how your store appears to customers in the online store.
+          </p>
+        </div>
         <Button onClick={handleSave} disabled={saving}>
           <Save size={16} className="mr-2" />
           {saving ? "Saving..." : "Save Changes"}
@@ -129,15 +180,18 @@ export default function SettingsMain() {
       </div>
 
       {!isProfileComplete && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+        <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 dark:border-yellow-800 dark:bg-yellow-900/20">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+            <AlertCircle className="mt-0.5 h-5 w-5 text-yellow-600 dark:text-yellow-400" />
             <div>
               <p className="font-medium text-yellow-800 dark:text-yellow-200">
-                Complete your profile to access all features
+                Complete your store profile to go live
               </p>
-              <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
-                Missing: {missingFields.map((f) => f.replace(/([A-Z])/g, " $1").trim()).join(", ")}
+              <p className="mt-1 text-sm text-yellow-600 dark:text-yellow-400">
+                Missing:{" "}
+                {missingFields
+                  .map((f) => f.replace(/([A-Z])/g, " $1").trim())
+                  .join(", ")}
               </p>
             </div>
           </div>
@@ -145,11 +199,11 @@ export default function SettingsMain() {
       )}
 
       {isProfileComplete && (
-        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-900/20">
           <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
             <p className="font-medium text-green-800 dark:text-green-200">
-              Profile complete! You have full access to all features.
+              Store profile complete. Your store is ready for customers.
             </p>
           </div>
         </div>
@@ -162,15 +216,58 @@ export default function SettingsMain() {
           <TabsTrigger value="banking">Banking</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="store" className="space-y-4 mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TabsContent value="store" className="mt-4 space-y-4">
+          {/* Live preview */}
+          <div className="overflow-hidden rounded-xl border">
+            <div className="relative h-32 bg-gradient-to-r from-fuchsia-600 to-fuchsia-400">
+              {settings.storeBanner ? (
+                <img
+                  src={settings.storeBanner}
+                  alt="Store banner preview"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm text-white/80">
+                  Store banner preview
+                </div>
+              )}
+            </div>
+            <div className="flex items-start gap-3 p-4">
+              {settings.storeLogo ? (
+                <img
+                  src={settings.storeLogo}
+                  alt="Store logo preview"
+                  className="-mt-10 h-16 w-16 rounded-xl border-4 border-background bg-background object-cover"
+                />
+              ) : (
+                <div className="-mt-10 flex h-16 w-16 items-center justify-center rounded-xl border-4 border-background bg-muted text-muted-foreground">
+                  <StoreIcon className="h-6 w-6" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="truncate font-semibold">
+                  {settings.storeName || "Your store name"}
+                </p>
+                <p className="line-clamp-2 text-sm text-muted-foreground">
+                  {settings.description ||
+                    "Your store description will appear here."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Store Name *</Label>
               <Input
                 value={settings.storeName}
                 onChange={(e) => update("storeName", e.target.value)}
                 placeholder="My Store"
+                aria-invalid={Boolean(storeErrors.storeName)}
               />
+              {storeErrors.storeName && (
+                <p className="text-xs text-red-500">{storeErrors.storeName}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Store Logo URL</Label>
@@ -178,7 +275,11 @@ export default function SettingsMain() {
                 value={settings.storeLogo}
                 onChange={(e) => update("storeLogo", e.target.value)}
                 placeholder="https://..."
+                aria-invalid={Boolean(storeErrors.storeLogo)}
               />
+              {storeErrors.storeLogo && (
+                <p className="text-xs text-red-500">{storeErrors.storeLogo}</p>
+              )}
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Store Banner URL</Label>
@@ -186,7 +287,11 @@ export default function SettingsMain() {
                 value={settings.storeBanner}
                 onChange={(e) => update("storeBanner", e.target.value)}
                 placeholder="https://..."
+                aria-invalid={Boolean(storeErrors.storeBanner)}
               />
+              {storeErrors.storeBanner && (
+                <p className="text-xs text-red-500">{storeErrors.storeBanner}</p>
+              )}
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label>Description *</Label>
@@ -195,13 +300,19 @@ export default function SettingsMain() {
                 value={settings.description}
                 onChange={(e) => update("description", e.target.value)}
                 placeholder="Tell customers about your store..."
+                aria-invalid={Boolean(storeErrors.description)}
               />
+              {storeErrors.description && (
+                <p className="text-xs text-red-500">
+                  {storeErrors.description}
+                </p>
+              )}
             </div>
           </div>
         </TabsContent>
 
-        <TabsContent value="business" className="space-y-4 mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TabsContent value="business" className="mt-4 space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Tax ID / TIN *</Label>
               <Input
@@ -221,8 +332,8 @@ export default function SettingsMain() {
           </div>
         </TabsContent>
 
-        <TabsContent value="banking" className="space-y-4 mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <TabsContent value="banking" className="mt-4 space-y-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Bank Name *</Label>
               <Input

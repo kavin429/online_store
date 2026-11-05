@@ -123,6 +123,70 @@ export type Order = {
   } | null;
 };
 
+/* ── Stock quotations (admin ↔ vendor purchase flow) ── */
+export type QuotationStatus =
+  | "REQUESTED"
+  | "QUOTED"
+  | "ACCEPTED"
+  | "READY_FOR_PICKUP"
+  | "DRIVER_ASSIGNED"
+  | "PICKED_UP"
+  | "RECEIVED"
+  | "REJECTED"
+  | "CANCELLED";
+
+export type QuotationItem = {
+  id: number;
+  quotationId: number;
+  productId: number;
+  productVariantId?: number | null;
+  name: string;
+  quantity: number;
+  requestedUnitPrice?: number | null;
+  quotedUnitPrice?: number | null;
+};
+
+export type QuotationEvent = {
+  id: number;
+  quotationId: number;
+  status: QuotationStatus;
+  title: string;
+  message?: string | null;
+  actor: "ADMIN" | "VENDOR" | "SYSTEM" | string;
+  createdAt: string;
+};
+
+export type Quotation = {
+  id: number;
+  vendorId: number;
+  status: QuotationStatus;
+  requestNote?: string | null;
+  vendorNote?: string | null;
+  adminNote?: string | null;
+  rejectionReason?: string | null;
+  quotedTotal: number;
+  acceptedTotal?: number | null;
+  pickupDate?: string | null;
+  acceptedAt?: string | null;
+  readyAt?: string | null;
+  assignedAt?: string | null;
+  pickedUpAt?: string | null;
+  receivedAt?: string | null;
+  driverId?: number | null;
+  admin?: { id: number; name: string } | null;
+  driver?: {
+    id: number;
+    name: string;
+    phone?: string | null;
+    vehicleType?: string | null;
+    vehicleNumber?: string | null;
+  } | null;
+  items: QuotationItem[];
+  events: QuotationEvent[];
+  createdAt: string;
+  updatedAt: string;
+};
+
 /* ── Review (API response shape) ──
    Returned by /api/reviews (queries prisma.review for the vendor's products). */
 export type ReviewAuthorType = "CUSTOMER" | "VENDOR" | "ADMIN";

@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@online-store/ui/select";
 import { AddressDialog, EMPTY_ADDRESS } from "./AddressDialog";
-import { DIAL_CODES } from "./constants";
+import { DIAL_CODES, validatePhoneForCountry } from "./constants";
 import { DeleteAccountDialog } from "./DeleteAccountDialog";
 import type { AddressView, ProfileData } from "./types";
 import { Field, cardCls, h2Cls, mutedCls } from "./ui";
@@ -36,9 +36,12 @@ export function SettingsTab({
   const [offersEmail, setOffersEmail] = useState(user.offersEmail);
   const [offersSms, setOffersSms] = useState(user.offersSms);
 
+  const [phoneError, setPhoneError] = useState("");
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<AddressView | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const dialCountry = DIAL_CODES.find((c) => c.dial === dial)?.label ?? "";
 
   const reset = () => {
     setName(user.name);
@@ -47,6 +50,7 @@ export function SettingsTab({
     setDob(user.dob);
     setOffersEmail(user.offersEmail);
     setOffersSms(user.offersSms);
+    setPhoneError("");
   };
 
   const saveProfile = async () => {
@@ -54,10 +58,13 @@ export function SettingsTab({
       toast.error("Please enter your name.");
       return;
     }
-    if (!/^\d{6,12}$/.test(phone)) {
-      toast.error("Enter a valid phone number (digits only).");
+    const phoneResult = validatePhoneForCountry(phone, dialCountry);
+    if (!phoneResult.ok) {
+      setPhoneError(phoneResult.error);
+      toast.error(phoneResult.error);
       return;
     }
+    setPhoneError("");
 
     setBusy(true);
     try {
@@ -149,10 +156,24 @@ export function SettingsTab({
               <Input
                 inputMode="numeric"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "");
+                  setPhone(val);
+                  const dialDigits = dial.replace(/\D/g, "");
+                  if (dialDigits && val.startsWith(dialDigits) && val.length > dialDigits.length) {
+                    setPhoneError(
+                      `Don't include the country code (${dial}) — enter only the local number.`
+                    );
+                  } else {
+                    setPhoneError("");
+                  }
+                }}
                 placeholder="771234567"
               />
             </div>
+            {phoneError && (
+              <p className="mt-1 text-xs text-red-500">{phoneError}</p>
+            )}
           </Field>
           <Field label="Date of birth">
             <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />

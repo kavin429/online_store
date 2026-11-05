@@ -9,6 +9,14 @@ export async function GET(req: NextRequest) {
     const limit = Number(searchParams.get("limit") || 10);
     const skip = (page - 1) * limit;
 
+    const categoryId = Number(
+      searchParams.get("categoryId") || searchParams.get("category") || 0
+    );
+
+    const vendorId = Number(
+      searchParams.get("vendorId") || searchParams.get("storeId") || 0
+    );
+
     // Products with no stock anywhere stay hidden from the storefront until
     // they are restocked (product-level or variant-level stock).
     const inStockOnly = {
@@ -18,8 +26,18 @@ export async function GET(req: NextRequest) {
       ],
     };
 
+    const where = {
+      AND: [
+        inStockOnly,
+        ...(Number.isFinite(categoryId) && categoryId > 0
+          ? [{ categoryId }]
+          : []),
+        ...(Number.isFinite(vendorId) && vendorId > 0 ? [{ vendorId }] : []),
+      ],
+    };
+
     const products = await prisma.product.findMany({
-      where: inStockOnly,
+      where,
       skip,
       take: limit,
 
@@ -30,6 +48,13 @@ export async function GET(req: NextRequest) {
       include: {
         category: true,
         subcategory: true,
+        vendor: {
+          select: {
+            id: true,
+            name: true,
+            vendorSettings: { select: { storeName: true } },
+          },
+        },
         images: true,
         variants: {
           include: {
@@ -74,7 +99,7 @@ export async function GET(req: NextRequest) {
       })),
     }));
 
-    const total = await prisma.product.count({ where: inStockOnly });
+    const total = await prisma.product.count({ where });
 
     return NextResponse.json({
       data: formattedProducts,

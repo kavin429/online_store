@@ -25,11 +25,12 @@ import {
   SlidersHorizontal,
   DollarSign,
   Star,
-  Settings,
+  Store,
   Truck,
   RotateCcw,
   ClipboardList,
   BadgePercent,
+  FileText,
   UserRound,
   ChevronsLeft,
   ChevronsRight,
@@ -64,6 +65,7 @@ const sidebarItems: SidebarItem[] = [
     ],
   },
   { title: "Inventory", icon: <ClipboardList size={18} />, path: "/dashboard/inventory" },
+  { title: "Quotations", icon: <FileText size={18} />, path: "/dashboard/quotations" },
   { title: "Offers", icon: <BadgePercent size={18} />, path: "/dashboard/offers" },
   { title: "Orders", icon: <ShoppingBag size={18} />, path: "/dashboard/orders" },
   { title: "Returns", icon: <RotateCcw size={18} />, path: "/dashboard/returns" },
@@ -71,7 +73,7 @@ const sidebarItems: SidebarItem[] = [
   { title: "Payouts", icon: <DollarSign size={18} />, path: "/dashboard/payouts" },
   { title: "Shipping", icon: <Truck size={18} />, path: "/dashboard/shipping" },
   { title: "Profile", icon: <UserRound size={18} />, path: "/dashboard/profile" },
-  { title: "Settings", icon: <Settings size={18} />, path: "/dashboard/settings" },
+  { title: "My Store", icon: <Store size={18} />, path: "/dashboard/store" },
 ];
 
 const A = {

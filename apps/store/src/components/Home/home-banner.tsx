@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { PartyPopper } from "lucide-react";
 import type { LandingOffer } from "@/lib/offers";
 import  FestivalSection  from "./offer-dialog";
+import FeaturesStrip from "./features-strip";
+import FlashDeals from "./flash-deals";
 
 function LoginToast() {
   const searchParams = useSearchParams();
@@ -179,7 +181,11 @@ export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] })
           ))}
         </div>
 
+        <FeaturesStrip />
+
         <CategoriesSliderPage />
+
+        <FlashDeals/>
 
         <div className="mt-10">
           <ProductCard />

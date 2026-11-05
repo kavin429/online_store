@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useCart } from "@/context/addToCard";
@@ -65,8 +65,7 @@ function MenuItem({ children, onClick }: any) {
 // Profile Menu
 // ────────────────────────────────────────────
 
-function ProfileMenu() {
-  const [isOpen, setIsOpen] = useState(false);
+function ProfileMenu({ isOpen, onToggle, onClose }: { isOpen: boolean; onToggle: () => void; onClose: () => void }) {
   const { data: session } = useSession();
 
   if (!session) {
@@ -85,7 +84,7 @@ function ProfileMenu() {
     <div className="relative">
       <Button
         className="flex items-center gap-2 rounded-full pl-1.5 pr-3 py-1 bg-fuchsia-500 hover:bg-fuchsia-600 text-white text-sm"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={onToggle}
       >
         {/* Circular avatar badge */}
         <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold shrink-0">
@@ -103,7 +102,7 @@ function ProfileMenu() {
       {isOpen && (
         <div
           className="fixed inset-0 z-40 lg:hidden"
-          onClick={() => setIsOpen(false)}
+          onClick={onClose}
         />
       )}
 
@@ -125,7 +124,7 @@ function ProfileMenu() {
           </div>
 
           <MenuItem>
-            <Link href="/profile" className="flex items-center gap-2 w-full" onClick={() => setIsOpen(false)}>
+            <Link href="/profile" className="flex items-center gap-2 w-full" onClick={onClose}>
               <UserCircle className="h-4 w-4 text-fuchsia-500" />
               <span>My Profile</span>
             </Link>
@@ -154,8 +153,7 @@ type Category = {
   imageUrl: string | null;
 };
 
-function CategoryDropdown() {
-  const [open, setOpen] = useState(false);
+function CategoryDropdown({ isOpen: open, onToggle, onClose }: { isOpen: boolean; onToggle: () => void; onClose: () => void }) {
   const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
@@ -185,7 +183,7 @@ function CategoryDropdown() {
           hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950
           transition-all duration-200
         "
-        onClick={() => setOpen(!open)}
+        onClick={onToggle}
       >
         Categories
         <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
@@ -194,7 +192,7 @@ function CategoryDropdown() {
       {open && (
         <MenuList className="absolute top-12 left-0 w-52 z-50">
           {loopingCategories.map((category) => (
-            <MenuItem key={category.id}>{category.name}</MenuItem>
+            <MenuItem key={category.id} onClick={onClose}>{category.name}</MenuItem>
           ))}
         </MenuList>
       )}
@@ -203,42 +201,10 @@ function CategoryDropdown() {
 }
 
 // ────────────────────────────────────────────
-// Icon Badge Button (cart / wishlist)
-// ────────────────────────────────────────────
-
-function IconBadgeBtn({ icon, count }: { icon: React.ReactNode; count: number }) {
-  return (
-    <div className="relative">
-      <Button
-        variant="outline"
-        size="icon"
-        className="
-          rounded-full
-          border-fuchsia-200 dark:border-fuchsia-900
-          hover:border-fuchsia-400 dark:hover:border-fuchsia-700
-          hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950
-          hover:text-fuchsia-600 dark:hover:text-fuchsia-400
-          transition-all duration-200
-        "
-      >
-        {icon}
-      </Button>
-      {count > 0 && (
-        <span className="absolute -top-2 -right-2 bg-fuchsia-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-semibold">
-          {count}
-        </span>
-      )}
-    </div>
-  );
-}
-
-
-// ────────────────────────────────────────────
 // Cart Hover Preview
 // ────────────────────────────────────────────
 
-function CartPreviewDropdown({ cart }: { cart: any[] }) {
-  const [isOpen, setIsOpen] = useState(false);
+function CartPreviewDropdown({ cart, isOpen, onToggle, onClose }: { cart: any[]; isOpen: boolean; onToggle: () => void; onClose: () => void }) {
 
   const subtotal = cart.reduce(
     (sum, item) => sum + (item.sellingPrice ?? item.price ?? 0) * (item.quantity ?? 1),
@@ -250,7 +216,7 @@ function CartPreviewDropdown({ cart }: { cart: any[] }) {
       <Button
         variant="outline"
         size="icon"
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={onToggle}
         className="
           rounded-full
           border-fuchsia-200 dark:border-fuchsia-900
@@ -276,7 +242,7 @@ function CartPreviewDropdown({ cart }: { cart: any[] }) {
       {isOpen && (
         <div
           className="fixed inset-0 z-40 lg:hidden"
-          onClick={() => setIsOpen(false)}
+          onClick={onClose}
         />
       )}
 
@@ -351,7 +317,7 @@ function CartPreviewDropdown({ cart }: { cart: any[] }) {
                   <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
                   <span className="text-gray-900 dark:text-gray-100">{formatLKR(subtotal)}</span>
                 </div>
-                <Link href="/cart" onClick={() => setIsOpen(false)}>
+                <Link href="/cart" onClick={onClose}>
                   <Button variant="shoe" className="w-full text-sm">
                     View Cart
                   </Button>
@@ -370,15 +336,14 @@ function CartPreviewDropdown({ cart }: { cart: any[] }) {
 // Wishlist Hover Preview
 // ────────────────────────────────────────────
 
-function WishlistPreviewDropdown({ wishlist, removeFromWishlist }: { wishlist: any[]; removeFromWishlist: (id: number) => void }) {
-  const [isOpen, setIsOpen] = useState(false);
+function WishlistPreviewDropdown({ wishlist, removeFromWishlist, isOpen, onToggle, onClose }: { wishlist: any[]; removeFromWishlist: (id: number) => void; isOpen: boolean; onToggle: () => void; onClose: () => void }) {
 
   return (
     <div className="group relative">
       <Button
         variant="outline"
         size="icon"
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={onToggle}
         className="
           rounded-full
           border-fuchsia-200 dark:border-fuchsia-900
@@ -404,7 +369,7 @@ function WishlistPreviewDropdown({ wishlist, removeFromWishlist }: { wishlist: a
       {isOpen && (
         <div
           className="fixed inset-0 z-40 lg:hidden"
-          onClick={() => setIsOpen(false)}
+          onClick={onClose}
         />
       )}
 
@@ -450,7 +415,7 @@ function WishlistPreviewDropdown({ wishlist, removeFromWishlist }: { wishlist: a
                   >
                     <Link
                       href={`/products/${item.id}`}
-                      onClick={() => setIsOpen(false)}
+                      onClick={onClose}
                       className="flex items-center gap-3 flex-1 min-w-0"
                     >
                       <img
@@ -502,10 +467,17 @@ function WishlistPreviewDropdown({ wishlist, removeFromWishlist }: { wishlist: a
 // Main Navbar
 // ────────────────────────────────────────────
 
+type PanelKey = "cart" | "wishlist" | "profile" | "categories" | null;
+
 export default function ComplexNavbar() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [openPanel, setOpenPanel] = useState<PanelKey>(null);
   const { wishlist, removeFromWishlist } = useWishlist();
   const { cart } = useCart();
+
+  const toggle = (key: PanelKey) =>
+    setOpenPanel((prev) => (prev === key ? null : key));
+  const closeAll = () => setOpenPanel(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -534,7 +506,7 @@ export default function ComplexNavbar() {
 
           {/* CATEGORIES (desktop) */}
           <div className="hidden lg:block">
-            <CategoryDropdown />
+            <CategoryDropdown isOpen={openPanel === "categories"} onToggle={() => toggle("categories")} onClose={closeAll} />
           </div>
 
           {/* SEARCH */}
@@ -554,10 +526,10 @@ export default function ComplexNavbar() {
 
           {/* RIGHT — desktop */}
           <div className="hidden lg:flex items-center gap-3 ml-auto">
-            <CartPreviewDropdown cart={cart} />
-            <WishlistPreviewDropdown wishlist={wishlist} removeFromWishlist={removeFromWishlist} />
+            <CartPreviewDropdown cart={cart} isOpen={openPanel === "cart"} onToggle={() => toggle("cart")} onClose={closeAll} />
+            <WishlistPreviewDropdown wishlist={wishlist} removeFromWishlist={removeFromWishlist} isOpen={openPanel === "wishlist"} onToggle={() => toggle("wishlist")} onClose={closeAll} />
             <ModeToggle />
-            <ProfileMenu />
+            <ProfileMenu isOpen={openPanel === "profile"} onToggle={() => toggle("profile")} onClose={closeAll} />
           </div>
 
           {/* MOBILE MENU TOGGLE */}
@@ -594,11 +566,11 @@ export default function ComplexNavbar() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              <CategoryDropdown />
-              <CartPreviewDropdown cart={cart} />
-              <WishlistPreviewDropdown wishlist={wishlist} removeFromWishlist={removeFromWishlist} />
+              <CategoryDropdown isOpen={openPanel === "categories"} onToggle={() => toggle("categories")} onClose={closeAll} />
+              <CartPreviewDropdown cart={cart} isOpen={openPanel === "cart"} onToggle={() => toggle("cart")} onClose={closeAll} />
+              <WishlistPreviewDropdown wishlist={wishlist} removeFromWishlist={removeFromWishlist} isOpen={openPanel === "wishlist"} onToggle={() => toggle("wishlist")} onClose={closeAll} />
               <ModeToggle />
-              <ProfileMenu />
+              <ProfileMenu isOpen={openPanel === "profile"} onToggle={() => toggle("profile")} onClose={closeAll} />
             </div>
           </div>
         </div>

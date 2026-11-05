@@ -8,7 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@online-store/ui/select";
-import { STATUS_STYLE, TIERS } from "./constants";
+import { StatusBadge as UiStatusBadge } from "@online-store/ui/status-badge";
+import { TIERS } from "./constants";
 import type { OrderStatus, TierName } from "./types";
 
 export const cardCls =
@@ -56,13 +57,7 @@ export function PickList({
 }
 
 export function StatusBadge({ status }: { status: OrderStatus }) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[status]}`}
-    >
-      {status}
-    </span>
-  );
+  return <UiStatusBadge status={status} />;
 }
 
 export function TierChip({ tier }: { tier: TierName }) {

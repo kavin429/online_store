@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card } from "@online-store/ui/card";
-import { Badge } from "@online-store/ui/badge";
+import { StatusBadge } from "@online-store/ui/status-badge";
 import { prisma } from "@/lib/prisma";
 import { currentDriver } from "@/lib/auth";
 import { DELIVERY_LABELS, type DeliveryStatus } from "@/lib/delivery";
@@ -9,12 +9,6 @@ import { formatLKR } from "@/lib/utils";
 import { History } from "lucide-react";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_STYLES: Record<string, string> = {
-  DELIVERED: "bg-green-100 text-green-700",
-  FAILED: "bg-red-100 text-red-700",
-  CANCELLED: "bg-gray-200 text-gray-700",
-};
 
 export default async function DeliveryHistoryPage() {
   const auth = await currentDriver();
@@ -59,9 +53,10 @@ export default async function DeliveryHistoryPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-semibold">Order #{order.id}</p>
-                      <Badge className={`border-0 ${STATUS_STYLES[status] ?? ""}`}>
-                        {DELIVERY_LABELS[status]}
-                      </Badge>
+                      <StatusBadge
+                        status={status}
+                        label={DELIVERY_LABELS[status]}
+                      />
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {order.fullName} · {order.city} · {count} item

@@ -26,6 +26,7 @@ model Admin {
 
   promos          Promo[]
   reviewResponses ReviewResponse[] @relation("ReviewResponseAuthor")
+  quotations      Quotation[]
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -90,6 +91,7 @@ model Vendor {
   promos         Promo[]
   offers         Offer[]
   variantValues  VariantValue[]
+  quotations     Quotation[]
 
   // ── Reviews ──
   reportedReviews Review[]         @relation("ReviewReports")
@@ -195,6 +197,8 @@ model Product {
 
   offerProducts OfferProduct[]
 
+  quotationItems QuotationItem[]
+
   createdAt DateTime @default(now())
 }
 
@@ -226,6 +230,8 @@ model ProductVariant {
 
   inventoryLogs InventoryLog[]
   batches       InventoryBatch[]
+
+  quotationItems QuotationItem[]
 
   createdAt DateTime @default(now())
 }
@@ -521,8 +527,9 @@ model Driver {
   currentLng        Float?
   locationUpdatedAt DateTime?
 
-  deliveries     Order[]         @relation("OrderDriver")
+  deliveries     Order[]          @relation("OrderDriver")
   trackingEvents TrackingEvent[]
+  quotations     Quotation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1066,4 +1073,104 @@ model OfferClaim {
   createdAt DateTime @default(now())
 
   @@unique([offerId, userId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ── Vendor Quotations (stock purchase requests) ──
+// ═══════════════════════════════════════════════════════════════
+
+// Admin asks a vendor to supply stock. The vendor replies with a price
+// ("quotation"), the admin accepts/rejects it, the vendor gives a pickup
+// date, and the admin assigns a driver to collect the stock. Receiving the
+// stock adds the quantities back into inventory.
+enum QuotationStatus {
+  REQUESTED
+  QUOTED
+  ACCEPTED
+  READY_FOR_PICKUP
+  DRIVER_ASSIGNED
+  PICKED_UP
+  RECEIVED
+  REJECTED
+  CANCELLED
+}
+
+model Quotation {
+  id Int @id @default(autoincrement())
+
+  vendorId Int
+  vendor   Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  adminId Int?
+  admin   Admin? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  status QuotationStatus @default(REQUESTED)
+
+  // Notes exchanged while negotiating the quotation.
+  requestNote     String? @db.Text
+  vendorNote      String? @db.Text
+  adminNote       String? @db.Text
+  rejectionReason String? @db.Text
+
+  // Totals are calculated from the quotation line items.
+  quotedTotal   Float @default(0)
+  acceptedTotal Float?
+
+  // Vendor declares when the stock is ready to collect.
+  pickupDate DateTime?
+
+  acceptedAt DateTime?
+  readyAt    DateTime?
+  assignedAt DateTime?
+  pickedUpAt DateTime?
+  receivedAt DateTime?
+
+  driverId Int?
+  driver   Driver? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+
+  items  QuotationItem[]
+  events QuotationEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([vendorId, status])
+  @@index([status])
+}
+
+model QuotationItem {
+  id Int @id @default(autoincrement())
+
+  quotationId Int
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  productVariantId Int?
+  productVariant   ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: SetNull)
+
+  // Snapshot of the requested line so history stays readable if the product changes.
+  name     String
+  quantity Int
+
+  // What the admin asked for vs. what the vendor quoted.
+  requestedUnitPrice Float?
+  quotedUnitPrice    Float?
+}
+
+model QuotationEvent {
+  id Int @id @default(autoincrement())
+
+  quotationId Int
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  status  QuotationStatus
+  title   String
+  message String? @db.Text
+  actor   String // ADMIN | VENDOR | SYSTEM
+
+  createdAt DateTime @default(now())
+
+  @@index([quotationId, createdAt])
 }

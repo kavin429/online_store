@@ -1,7 +1,7 @@
 // app/login/page.tsx
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { User, Lock, ShoppingBag, Truck, ShieldCheck } from "lucide-react";
@@ -14,27 +14,63 @@ import { Button } from "@online-store/ui/button";
 function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
+  // Google (and other OAuth) failures come back as ?error=…
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (!error) return;
+
+    if (error === "OAuthAccountNotLinked") {
+      toast.error(
+        "This email is already linked to another sign-in method. Please log in with your password."
+      );
+    } else if (error === "AccessDenied") {
+      toast.error("Google sign-in was cancelled.");
+    } else {
+      toast.error("Google sign-in failed. Please try again.");
+    }
+  }, [searchParams]);
+
+  const validateEmail = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return "Email is required.";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      return "Enter a valid email address.";
+    }
+    return "";
+  };
+
   const handleLogin = async () => {
-    if (!email || !password) {
-      toast.error("Please enter both email and password");
+    const emailMessage = validateEmail(email);
+    setEmailError(emailMessage);
+
+    if (emailMessage) {
+      toast.error(emailMessage);
+      return;
+    }
+
+    if (!password) {
+      toast.error("Please enter your password");
       return;
     }
 
     setLoading(true);
     try {
       const result = await signIn("credentials", {
-        email,
+        email: email.trim().toLowerCase(),
         password,
         redirect: false,
       });
 
       if (result?.error) {
-        toast.error("Invalid email or password");
+        toast.error(
+          "Incorrect email or password. If you signed up with Google, use Continue with Google."
+        );
         return;
       }
 
@@ -43,7 +79,7 @@ function LoginContent() {
           const separator = callbackUrl.includes("?") ? "&" : "?";
           router.push(`${callbackUrl}${separator}loggedIn=1`);
           router.refresh();
-        }, 1000);
+        }, 600);
       }
     } catch (error) {
       console.error(error);
@@ -96,7 +132,11 @@ function LoginContent() {
                 type="email"
                 placeholder="Enter your email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError("");
+                }}
                 className="
                   w-full
                   bg-white/60 dark:bg-zinc-800/60
@@ -111,6 +151,11 @@ function LoginContent() {
                 "
               />
             </div>
+            {emailError && (
+              <p className="-mt-1 mb-2 pl-4 text-xs text-red-500">
+                {emailError}
+              </p>
+            )}
 
             {/* PASSWORD */}
             <div className="relative mb-2">
@@ -165,7 +210,13 @@ function LoginContent() {
             {/* GOOGLE LOGIN */}
             <Button
               variant="outline"
-              onClick={() => signIn("google", { callbackUrl: `${callbackUrl}?loggedIn=1` })}
+              onClick={() =>
+                signIn("google", {
+                  callbackUrl: `${callbackUrl}${
+                    callbackUrl.includes("?") ? "&" : "?"
+                  }loggedIn=1`,
+                })
+              }
               className="
                 h-11
                 rounded-full
@@ -188,7 +239,7 @@ function LoginContent() {
             <p className="mt-5 text-zinc-500 dark:text-zinc-400 text-sm text-center">
               New to GrowMore?{" "}
               <Link
-                href="/signup"
+                href="/register"
                 className="text-fuchsia-600 dark:text-fuchsia-400 font-semibold hover:text-fuchsia-700 dark:hover:text-fuchsia-300"
               >
                 Create an account
