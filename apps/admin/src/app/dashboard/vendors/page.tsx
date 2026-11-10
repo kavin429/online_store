@@ -7,6 +7,7 @@ export default async function VendorPage() {
     select: {
       id: true,
       name: true,
+      username: true,
       image: true,
       email: true,
       phone: true,

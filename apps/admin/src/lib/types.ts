@@ -26,6 +26,7 @@ export type VendorSettings = {
 export type Vendor = {
   id: number;
   name?: string | null;
+  username?: string | null;
   image?: string | null;
   email?: string | null;
   phone?: string | null;

@@ -62,8 +62,9 @@ enum CountryStatus {
 model Vendor {
   id Int @id @default(autoincrement())
 
-  name  String
-  image String?
+  name     String
+  username String? @unique
+  image    String?
 
   email String @unique
   phone String
@@ -654,8 +655,8 @@ model VendorSettings {
   vendor   Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   storeName   String?
-  storeLogo   String?
-  storeBanner String?
+  storeLogo   String?   @db.LongText
+  storeBanner String?   @db.LongText
   description String?
 
   taxId       String?

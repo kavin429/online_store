@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Eye, EyeOff } from "lucide-react";
 import { Button } from "@online-store/ui/button";
 import {
   Dialog,
@@ -36,7 +35,10 @@ const GEO_API = "https://countriesnow.space/api/v0.1";
 type Props = {
   open: boolean;
   setOpen: (v: boolean) => void;
-  onAdd: (vendor: any) => void;
+  onAdd: (
+    vendor: any,
+    credentials?: { username: string; password: string },
+  ) => void;
   defaultValues?: {
     id?: number;
     name: string;
@@ -130,9 +132,7 @@ export default function AddVendorDialog({
     defaultValues: emptyValues,
   });
 
-  const [showPassword, setShowPassword] = useState(false);
   const loading = form.formState.isSubmitting;
-
   // Location dropdown data
   const [countries, setCountries] = useState<string[]>([]);
   const [provinces, setProvinces] = useState<string[]>([]);
@@ -272,11 +272,18 @@ export default function AddVendorDialog({
         throw new Error(body.error || "Failed to save vendor");
       }
 
-      const savedVendor = await res.json();
-      onAdd(savedVendor);
+      const body = await res.json();
+      const { credentials, ...savedVendor } = body;
+      onAdd(savedVendor, credentials);
       form.reset(emptyValues);
       setOpen(false);
-      toast.success(isEdit ? "Vendor updated successfully!" : "Vendor added successfully!");
+      toast.success(
+        isEdit
+          ? "Vendor updated successfully!"
+          : body.emailSent
+            ? "Vendor added and login details emailed."
+            : "Vendor added successfully!",
+      );
     } catch (err) {
       console.error(err);
       toast.error(isEdit ? "Failed to update vendor" : "Failed to add vendor");
@@ -292,6 +299,12 @@ export default function AddVendorDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <p className="rounded-md bg-fuchsia-50 px-3 py-2 text-xs text-fuchsia-800 dark:bg-fuchsia-950/30 dark:text-fuchsia-200">
+              {isEdit
+                ? "Use the login credentials action in the vendor list to view or reset this vendor's username and password."
+                : "A username and password will be generated automatically. You can copy them and share them with the vendor."}
+            </p>
+
             {/* Vendor Name */}
             <FormField
               control={form.control}
@@ -471,56 +484,6 @@ export default function AddVendorDialog({
               />
             )}
 
-            {/* Password */}
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className={labelClass}>
-                    {isEdit ? "New Password" : "Password"}
-                    {isEdit && (
-                      <span className="ml-1 text-xs text-fuchsia-700/70 dark:text-fuchsia-300/70">
-                        (leave blank to keep current)
-                      </span>
-                    )}
-                  </FormLabel>
-                  <FormControl>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <div className="relative flex-1">
-                        <Input
-                          {...field}
-                          type={showPassword ? "text" : "password"}
-                          placeholder={isEdit ? "Enter new password" : "Enter password"}
-                          className="pr-10"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword((v) => !v)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-fuchsia-500 hover:text-fuchsia-700"
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full sm:w-auto"
-                        onClick={() => {
-                          const generated = generatePassword();
-                          field.onChange(generated);
-                          setShowPassword(true);
-                        }}
-                      >
-                        Generate
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <DialogFooter className="sm:justify-between">
               <Button
                 variant="outline"
@@ -539,25 +502,4 @@ export default function AddVendorDialog({
       </DialogContent>
     </Dialog>
   );
-
-  function generatePassword(length = 12) {
-    const chars =
-      "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
-    let password = "";
-    const cryptoObj = typeof window !== "undefined" ? window.crypto : undefined;
-
-    if (cryptoObj?.getRandomValues) {
-      const values = new Uint32Array(length);
-      cryptoObj.getRandomValues(values);
-      for (let i = 0; i < length; i++) {
-        password += chars[values[i] % chars.length];
-      }
-    } else {
-      // fallback (SSR or older browsers)
-      for (let i = 0; i < length; i++) {
-        password += chars[Math.floor(Math.random() * chars.length)];
-      }
-    }
-    return password;
-  }
 }

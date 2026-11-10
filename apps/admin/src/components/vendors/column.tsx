@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@online-store/ui/button";
-import { Edit, Trash2, Package, Eye, EyeOff, Check, Copy } from "lucide-react";
+import { Edit, Trash2, Package, Eye, EyeOff, Check, Copy, KeyRound } from "lucide-react";
 import type { Vendor } from "@/lib/types";
 import StatusBadge from "@/components/comman/status-badge";
 import {toast} from "sonner"
@@ -58,6 +58,7 @@ export const columns = (
   onDelete: (vendor: Vendor) => void,
   onViewProducts: (vendor: Vendor) => void,
   onManage: (vendor: Vendor) => void,
+  onShowCredentials: (vendor: Vendor) => void,
 ): ColumnDef<Vendor>[] => [
     {
       accessorKey: "id",
@@ -91,6 +92,9 @@ export const columns = (
               </div>
             )}
             <p className="font-medium">{vendor.name || "—"}</p>
+            {vendor.username && (
+              <p className="text-xs text-muted-foreground">{vendor.username}</p>
+            )}
           </div>
         );
       },
@@ -175,6 +179,14 @@ export const columns = (
         const vendor = row.original;
         return (
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="iconSm"
+              title="Login credentials"
+              onClick={() => onShowCredentials(vendor)}
+            >
+              <KeyRound className="w-4 h-4" />
+            </Button>
             <Button variant="edit" size="iconSm" onClick={() => onEdit(vendor)}>
               <Edit className="w-4 h-4" />
             </Button>

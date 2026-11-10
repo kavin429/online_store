@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { serialize } from "cookie";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { sendVendorActivationEmail } from "@/lib/vendor-activation-email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
     const vendor = await prisma.vendor.findFirst({
       where: {
         OR: [
+          { username: name },
           { email: name },
           { name: name },
         ],
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     if (!vendor) {
       return NextResponse.json(
-        { error: "Invalid email or password" },
+        { error: "Invalid username or password" },
         { status: 401 }
       );
     }
@@ -33,7 +35,7 @@ export async function POST(req: NextRequest) {
     const passwordMatch = await bcrypt.compare(password, vendor.password);
     if (!passwordMatch) {
       return NextResponse.json(
-        { error: "Invalid email or password" },
+        { error: "Invalid username or password" },
         { status: 401 }
       );
     }
@@ -62,6 +64,21 @@ export async function POST(req: NextRequest) {
           where: { id: vendor.id },
           data: { status: "ACTIVE" },
         });
+
+        // Auto-approval also counts as pending -> active: send the login details.
+        if (vendor.email && vendor.plainPassword) {
+          const configured = process.env.VENDOR_APP_URL || req.nextUrl.origin;
+          const base = configured.replace(/\/+$/, "");
+          const loginUrl = /\/login$/i.test(base) ? base : `${base}/login`;
+
+          await sendVendorActivationEmail({
+            to: vendor.email,
+            vendorName: vendor.name,
+            username: vendor.username || vendor.email,
+            password: vendor.plainPassword,
+            loginUrl,
+          });
+        }
       } else {
         const hoursRemaining = Math.ceil(24 - hoursElapsed);
         return NextResponse.json(

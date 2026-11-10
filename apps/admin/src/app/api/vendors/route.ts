@@ -3,16 +3,58 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 import { isAdmin } from "@/lib/auth";
+import { generateVendorPassword, generateVendorUsername } from "@/lib/vendors";
+import { sendVendorActivationEmail } from "@/lib/vendor-email";
+
 export async function POST(req: Request) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const { password: rawPassword, ...rest } = await req.json();
-    const password = await bcrypt.hash(rawPassword, 10);
-    const vendor = await prisma.vendor.create({ data: { ...rest, password, plainPassword: rawPassword } });
-    return NextResponse.json(vendor, { status: 201 });
+    const body = await req.json().catch(() => ({}));
+    const { password: _password, username: _username, ...rest } = body;
+
+    const name = String(rest.name ?? "").trim();
+    if (!name) {
+      return NextResponse.json({ error: "Vendor name is required" }, { status: 400 });
+    }
+
+    // The admin never types these: generate a login the same way the driver
+    // flow does, then show it once so it can be copied and shared.
+    const username = await generateVendorUsername(name);
+    const plainPassword = generateVendorPassword();
+    const password = await bcrypt.hash(plainPassword, 10);
+
+    const vendor = await prisma.vendor.create({
+      data: {
+        ...rest,
+        name,
+        username,
+        password,
+        plainPassword,
+      },
+    });
+
+    // If the vendor is created as active, email the login details right away.
+    let emailSent = false;
+    if (vendor.status === "ACTIVE" && vendor.email) {
+      emailSent = await sendVendorActivationEmail({
+        to: vendor.email,
+        vendorName: vendor.name,
+        username,
+        password: plainPassword,
+      });
+    }
+
+    return NextResponse.json(
+      {
+        ...vendor,
+        credentials: { username, password: plainPassword },
+        emailSent,
+      },
+      { status: 201 },
+    );
   } catch (error: any) {
     console.error(error);
     if (error.code === "P2002") {
@@ -33,6 +75,7 @@ export async function GET() {
       select: {
         id: true,
         name: true,
+        username: true,
         image: true,
         email: true,
         phone: true,

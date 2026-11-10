@@ -160,6 +160,7 @@ export default function VendorDetailsSheet({
           <Section title="Account">
             <div className="grid grid-cols-2 gap-4">
               <Field label="Vendor ID" value={String(vendor.id)} />
+              <Field label="Username" value={vendor.username} />
               <Field
                 label="Joined"
                 value={new Date(vendor.createdAt).toLocaleDateString()}
