@@ -11,6 +11,10 @@ export default async function Page() {
     id: c.id,
     name: c.name,
     createdAt: c.createdAt.toISOString(),
+    // Convert image bytes to a data URL so the table can display it
+    imageUrl: c.image
+      ? `data:image/png;base64,${Buffer.from(c.image).toString("base64")}`
+      : null,
   }));
 
   return <CategoryMain data={formatted} />;

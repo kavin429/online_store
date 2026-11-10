@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 import { isAdmin } from "@/lib/auth";
+
+const toImageUrl = (image: Uint8Array | Buffer | null) =>
+  image ? `data:image/png;base64,${Buffer.from(image).toString("base64")}` : null;
+
 /* =========================
    UPDATE CATEGORY
 ========================= */
@@ -43,7 +47,9 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json(updatedCategory);
+    // Return imageUrl (not the raw buffer) so the client keeps rendering the image
+    const { image: savedImage, ...rest } = updatedCategory;
+    return NextResponse.json({ ...rest, imageUrl: toImageUrl(savedImage) });
 
   } catch (error: any) {
     console.error("UPDATE ERROR:", error);

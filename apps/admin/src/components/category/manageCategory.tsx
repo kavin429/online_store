@@ -52,22 +52,14 @@ export default function AddCategoryDialog({
   const loading = form.formState.isSubmitting;
 
   useEffect(() => {
-    // Update preview if editing an existing category
-    setImagePreview(defaultValues?.imageUrl || null);
-    form.reset({
-      name: defaultValues?.name || "",
-      image: undefined,
-    });
-  }, [defaultValues, form]);
-  useEffect(() => {
-    if (!open) {
+    if (open) {
+      setImagePreview(defaultValues?.imageUrl || null);
       form.reset({
-        name: "",
+        name: defaultValues?.name || "",
         image: undefined,
       });
-      setImagePreview(null);
     }
-  }, [open]);
+  }, [open, defaultValues, form]);
   const onSubmit = async (values: CategoryFormValues) => {
     const isEdit = !!defaultValues?.id;
     const url = isEdit

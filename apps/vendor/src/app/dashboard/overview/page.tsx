@@ -155,55 +155,7 @@ type DashboardData = {
   bestSellingProducts: { name: string; totalSold: number; orderCount: number }[];
 };
 
-// ── DEMO DATA (no DB / API call needed) ──
-const DEMO_DATA: DashboardData = {
-  stats: {
-    totalProducts: 128,
-    activeProducts: 112,
-    lowStockProducts: 7,
-    pendingOrders: 14,
-    todayOrders: 23,
-    todayRevenue: 84250,
-    weekRevenue: 512300,
-    unreadNotifications: 5,
-  },
-  recentOrders: [
-    { id: 1042, customer: "Nadeesha Perera", total: 6450, status: "DELIVERED", date: "2026-09-08", itemCount: 3 },
-    { id: 1041, customer: "Kasun Fernando", total: 12300, status: "SHIPPED", date: "2026-09-08", itemCount: 2 },
-    { id: 1040, customer: "Ishara Silva", total: 3200, status: "PENDING", date: "2026-09-07", itemCount: 1 },
-    { id: 1039, customer: "Dilshan Bandara", total: 8900, status: "CONFIRMED", date: "2026-09-07", itemCount: 4 },
-    { id: 1038, customer: "Tharushi Jayasuriya", total: 4500, status: "CANCELLED", date: "2026-09-06", itemCount: 2 },
-  ],
-  recentReviews: [
-    { id: 1, rating: 5, comment: "Great quality, fast delivery!", customer: "Nadeesha Perera", product: "Running Shoes X2", date: "2026-09-08" },
-    { id: 2, rating: 4, comment: "Good but sizing runs small.", customer: "Kasun Fernando", product: "Leather Sandals", date: "2026-09-07" },
-    { id: 3, rating: 5, comment: null, customer: "Ishara Silva", product: "Sports Sneakers", date: "2026-09-06" },
-    { id: 4, rating: 3, comment: "Average product for the price.", customer: "Dilshan Bandara", product: "Formal Shoes", date: "2026-09-05" },
-  ],
-  orderStatusCounts: [
-    { status: "DELIVERED", count: 48 },
-    { status: "SHIPPED", count: 21 },
-    { status: "CONFIRMED", count: 14 },
-    { status: "PENDING", count: 14 },
-    { status: "CANCELLED", count: 6 },
-  ],
-  weeklyRevenueTrend: [
-    { date: "Mon", revenue: 42000 },
-    { date: "Tue", revenue: 58000 },
-    { date: "Wed", revenue: 39000 },
-    { date: "Thu", revenue: 71000 },
-    { date: "Fri", revenue: 65000 },
-    { date: "Sat", revenue: 92000 },
-    { date: "Sun", revenue: 84250 },
-  ],
-  bestSellingProducts: [
-    { name: "Running Shoes X2", totalSold: 142, orderCount: 98 },
-    { name: "Leather Sandals", totalSold: 118, orderCount: 76 },
-    { name: "Sports Sneakers", totalSold: 97, orderCount: 61 },
-    { name: "Formal Shoes", totalSold: 64, orderCount: 40 },
-    { name: "Casual Loafers", totalSold: 51, orderCount: 33 },
-  ],
-};
+
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -227,12 +179,23 @@ export default function MarketplaceDashboard() {
 
   useEffect(() => {
     setMounted(true);
-    // Simulate a short load so skeletons are visible; swap DEMO_DATA for a real fetch later.
-    const timer = setTimeout(() => {
-      setData(DEMO_DATA);
-      setLoading(false);
-    }, 400);
-    return () => clearTimeout(timer);
+    let cancelled = false;
+    fetch("/api/dashboard")
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
+        return res.json();
+      })
+      .then((json) => {
+        if (cancelled) return;
+        setData(json as DashboardData);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const mode: "dark" | "light" = mounted && resolvedTheme === "light" ? "light" : "dark";
