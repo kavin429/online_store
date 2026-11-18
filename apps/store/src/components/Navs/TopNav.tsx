@@ -192,7 +192,15 @@ function CategoryDropdown({ isOpen: open, onToggle, onClose }: { isOpen: boolean
       {open && (
         <MenuList className="absolute top-12 left-0 w-52 z-50">
           {loopingCategories.map((category) => (
-            <MenuItem key={category.id} onClick={onClose}>{category.name}</MenuItem>
+            <MenuItem key={category.id} onClick={onClose}>
+              <Link
+                href={`/products?categoryId=${category.id}`}
+                onClick={onClose}
+                className="block w-full"
+              >
+                {category.name}
+              </Link>
+            </MenuItem>
           ))}
         </MenuList>
       )}

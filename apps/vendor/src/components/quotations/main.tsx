@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DataTable } from "@online-store/ui/data-table";
 import {
   Dialog,
@@ -24,6 +24,7 @@ import {
   formatMoney,
   quotationRef,
 } from "./column";
+import { QuotationProgress } from "./progress";
 
 type Props = { data: Quotation[] };
 
@@ -54,6 +55,18 @@ export default function VendorQuotationMain({ data }: Props) {
   const [pickupDate, setPickupDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const openedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const openId = new URLSearchParams(window.location.search).get("open");
+    if (!openId || openedRef.current === openId) return;
+    const match = quotations.find((item) => String(item.id) === openId);
+    if (!match) return;
+    openedRef.current = openId;
+    setViewing(match);
+    setViewOpen(true);
+  }, [quotations]);
 
   useEffect(() => {
     if (!viewing) return;
@@ -184,6 +197,11 @@ export default function VendorQuotationMain({ data }: Props) {
                   Stock quotation request from the admin.
                 </DialogDescription>
               </DialogHeader>
+
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Progress</p>
+                <QuotationProgress status={viewing.status} />
+              </div>
 
               <div className="space-y-4 text-sm">
                 <div className="grid gap-3 sm:grid-cols-2">

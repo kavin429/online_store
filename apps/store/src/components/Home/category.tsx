@@ -41,7 +41,7 @@ export default function CategoriesSliderPage() {
           {loopingCategories.map((category, index) => (
             <Link
               key={`${category.id}-${index}`}
-              href={`/categories/${category.id}`}
+              href={`/products?categoryId=${category.id}`}
               className="flex-shrink-0 w-[300px]"
             >
               <Card className="grid grid-cols-2 items-center gap-2">

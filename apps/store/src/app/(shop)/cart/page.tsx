@@ -226,8 +226,8 @@ export default function CartPage() {
                     <div className="flex items-center border border-fuchsia-200 dark:border-fuchsia-900 rounded-md overflow-hidden">
                       <button
                         onClick={() => handleDecrease(item)}
-                        disabled={busy}
-                        className="p-2 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950 transition-colors disabled:opacity-40"
+                        disabled={busy || item.quantity <= 1}
+                        className="p-2 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-950 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         aria-label="Decrease quantity"
                       >
                         <Minus className="h-3.5 w-3.5" />

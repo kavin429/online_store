@@ -162,8 +162,8 @@ export async function GET(req: NextRequest) {
     const products = await prisma.product.findMany({
       where: { vendorId },
       include: {
-        category: true,
-        vendor: true,
+        category: { select: { id: true, name: true } },
+        vendor: { select: { id: true, name: true } },
         images: true,
         variants: { include: { values: { include: { variantValue: true } } } },
       },

@@ -38,9 +38,10 @@ type Step1Props = {
   form: UseFormReturn<any>;
   previews: string[];
   setPreviews: React.Dispatch<React.SetStateAction<string[]>>;
+  onImageRemoved?: (src: string) => void;
 };
 
-export default function Step1({ form, previews, setPreviews }: Step1Props) {
+export default function Step1({ form, previews, setPreviews, onImageRemoved }: Step1Props) {
   const [categories, setCategories] = useState<CategoryType[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<number | null>(
     form.getValues("categoryId") ? Number(form.getValues("categoryId")) : null
@@ -135,15 +136,22 @@ export default function Step1({ form, previews, setPreviews }: Step1Props) {
   };
 
   const removeImage = (index: number) => {
+    const removedPreview = previews[index];
+    if (removedPreview) onImageRemoved?.(removedPreview);
     const updatedPreviews = previews.filter((_, i) => i !== index);
     setPreviews(updatedPreviews);
-    const existingFiles = form.getValues("images") || [];
 
-    const updatedFiles = existingFiles.filter(
-      (_: File, i: number) => i !== index
+    // In edit mode previews start with the images already saved in the DB,
+    // while `images` only holds newly selected files. Only remove from that
+    // file list when the preview belongs to a new upload.
+    const newFiles: File[] = form.getValues("images") || [];
+    const existingPreviewCount = Math.max(0, previews.length - newFiles.length);
+    if (index < existingPreviewCount) return;
+
+    form.setValue(
+      "images",
+      newFiles.filter((_, i) => i !== index - existingPreviewCount)
     );
-
-    form.setValue("images", updatedFiles);
   };
 
   return (
@@ -268,6 +276,15 @@ export default function Step1({ form, previews, setPreviews }: Step1Props) {
                             : current.filter((id: number) => id !== variantType.id);
 
                           field.onChange(newValue);
+
+                          // Unchecking a variant type must also drop its
+                          // configured values, otherwise they get saved back.
+                          if (!checked) {
+                            form.setValue(`options.${variantType.slug}`, [], {
+                              shouldValidate: true,
+                              shouldDirty: true,
+                            });
+                          }
                         }}
                       />
                       {variantType.name}

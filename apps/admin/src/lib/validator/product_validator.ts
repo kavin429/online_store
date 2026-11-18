@@ -15,12 +15,7 @@ export const productSchema = z.object({
 
   variantTypeIds: z.array(z.number()).optional(),
 
-  options: z.object({
-    color: z.array(z.any()).optional(),
-    size: z.array(z.any()).optional(),
-    weight: z.array(z.any()).optional(),
-    volume: z.array(z.any()).optional(),
-  }),
+  options: z.record(z.string(), z.array(z.any()).optional()),
 
   costPrice: z.string().min(1, "Cost price is required"),
   sellingPrice: z.string().min(1, "Selling price is required"),

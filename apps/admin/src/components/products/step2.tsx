@@ -148,11 +148,12 @@ function VariantTypeSection({
           stock: 0,
           image: null,
         },
-      ]);
+      ], { shouldValidate: true, shouldDirty: true });
     } else {
       form.setValue(
         fieldName,
         current.filter((c) => c.variantValueId !== value.id),
+        { shouldValidate: true, shouldDirty: true },
       );
     }
   };
@@ -162,6 +163,7 @@ function VariantTypeSection({
     form.setValue(
       fieldName,
       current.map((c) => (c.variantValueId === valueId ? { ...c, ...patch } : c)),
+      { shouldValidate: true, shouldDirty: true },
     );
   };
 

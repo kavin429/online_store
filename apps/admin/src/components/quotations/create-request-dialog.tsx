@@ -149,11 +149,54 @@ export default function CreateQuotationDialog({
       setError("Choose the vendor you want a quotation from.");
       return;
     }
-    if (lines.length === 0) {
+
+    let resolvedLines = lines;
+    if (draftProduct) {
+      const quantity = Number(draftQuantity);
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        setError("Quantity must be a whole number of at least 1.");
+        return;
+      }
+      let variantId: number | null = null;
+      let variantLabel: string | null = null;
+      if (draftProduct.variants.length > 0) {
+        variantId = Number(draftVariantId);
+        const variant = draftProduct.variants.find((v) => v.id === variantId);
+        if (!variant) {
+          setError("Choose a variant for this product.");
+          return;
+        }
+        variantLabel = variant.sku || `Variant #${variant.id}`;
+      }
+      const duplicate = lines.some(
+        (l) => l.productId === draftProduct.id && l.productVariantId === variantId,
+      );
+      if (!duplicate) {
+        resolvedLines = [
+          ...lines,
+          {
+            key: `${draftProduct.id}-${variantId ?? "base"}-${Date.now()}`,
+            productId: draftProduct.id,
+            productVariantId: variantId,
+            name: draftProduct.name,
+            variantLabel,
+            quantity,
+            requestedUnitPrice: draftPrice,
+          },
+        ];
+        setLines(resolvedLines);
+        setDraftProductId("");
+        setDraftVariantId("");
+        setDraftQuantity("1");
+        setDraftPrice("");
+      }
+    }
+
+    if (resolvedLines.length === 0) {
       setError("Add at least one product to the request.");
       return;
     }
-    for (const line of lines) {
+    for (const line of resolvedLines) {
       if (!Number.isInteger(line.quantity) || line.quantity <= 0) {
         setError("Every line needs a quantity of at least 1.");
         return;
@@ -168,7 +211,7 @@ export default function CreateQuotationDialog({
         body: JSON.stringify({
           vendorId: vendor,
           requestNote: note,
-          items: lines.map((line) => ({
+          items: resolvedLines.map((line) => ({
             productId: line.productId,
             productVariantId: line.productVariantId,
             quantity: line.quantity,

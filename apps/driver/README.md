@@ -46,6 +46,7 @@ origin.
 - Pickup, out-for-delivery, delivered and failed delivery actions with notes
 - Live GPS sharing
 - Delivery history
+- In-app notification inbox with a bell badge and live toast when a new delivery is assigned
 - Online/offline availability toggle, phone update and password change
 
 ## API routes
@@ -56,10 +57,29 @@ origin.
 | `GET` | `/api/deliveries/:id` | One assigned order + timeline |
 | `PATCH` | `/api/deliveries/:id` | Update delivery status |
 | `POST` | `/api/deliveries/:id/location` | Store rider GPS position |
+| `GET/PATCH` | `/api/notifications` | Driver notification inbox / mark as read |
+| `GET` | `/api/notifications/stream` | SSE stream for live assignment toasts |
 | `GET/PATCH` | `/api/me` | Profile, availability, password |
+
+## Notifications
+
+When an admin assigns an order to a driver, the admin API writes a
+`DriverNotification` row in the same transaction as the `TrackingEvent`. The
+driver app reads that table at `/api/notifications` for the inbox (bell badge +
+`/dashboard/notifications`) and an SSE endpoint at
+`/api/notifications/stream` for live toasts. The stream polls the database
+every 5 seconds and only emits events to the subscribed driver, so
+notifications never leak between riders.
 
 ## Database
 
-The feature uses the `Driver`, `TrackingEvent` tables and the delivery columns
-on `Order`. The migration lives at
-`packages/db/prisma/migrations/20261102120000_add_drivers_delivery_tracking`.
+The delivery feature uses the `Driver`, `TrackingEvent`, `DriverNotification`
+tables and the delivery columns on `Order`. The driver tables are created by
+the initial migration; the notification table migration lives at
+`packages/db/prisma/migrations/20261118000000_add_driver_notifications`.
+
+Apply it with:
+
+```bash
+pnpm --filter @online-store/db migrate:deploy
+```

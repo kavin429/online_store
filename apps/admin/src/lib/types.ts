@@ -332,7 +332,9 @@ export type OptionEntry = {
   name?: string;
   hexCode?: string | null;
   priceAdjustment?: number | string;
+  initialPriceAdjustment?: number | string;
   stock?: number | string;
+  initialStock?: number | string;
   image?: string | null;
   existingImageUrl?: string | null;
 };

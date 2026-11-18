@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DataTable } from "@online-store/ui/data-table";
 import { Button } from "@online-store/ui/button";
 import { Plus } from "lucide-react";
@@ -29,6 +29,18 @@ export default function QuotationMain({ data, vendors, products, drivers }: Prop
 
   const [createOpen, setCreateOpen] = useState(false);
 
+  const openedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const openId = new URLSearchParams(window.location.search).get("open");
+    if (!openId || openedRef.current === openId) return;
+    const match = quotations.find((item) => String(item.id) === openId);
+    if (!match) return;
+    openedRef.current = openId;
+    setViewing(match);
+    setViewOpen(true);
+  }, [quotations]);
+
   const handleView = (quotation: Quotation) => {
     setViewing(quotation);
     setViewOpen(true);
@@ -56,7 +68,7 @@ export default function QuotationMain({ data, vendors, products, drivers }: Prop
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Purchase quotations</h2>
+          <h1 className="text-2xl font-bold">Quotations</h1>
           <p className="text-xs text-muted-foreground">
             Ask vendors to supply stock, then track acceptance, pickup and receiving.
           </p>

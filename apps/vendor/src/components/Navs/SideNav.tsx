@@ -34,6 +34,7 @@ import {
   UserRound,
   ChevronsLeft,
   ChevronsRight,
+  Bell,
 } from "lucide-react";
 
 interface SideNavProps {
@@ -66,6 +67,7 @@ const sidebarItems: SidebarItem[] = [
   },
   { title: "Inventory", icon: <ClipboardList size={18} />, path: "/dashboard/inventory" },
   { title: "Quotations", icon: <FileText size={18} />, path: "/dashboard/quotations" },
+  { title: "Notifications", icon: <Bell size={18} />, path: "/dashboard/notifications" },
   { title: "Offers", icon: <BadgePercent size={18} />, path: "/dashboard/offers" },
   { title: "Orders", icon: <ShoppingBag size={18} />, path: "/dashboard/orders" },
   { title: "Returns", icon: <RotateCcw size={18} />, path: "/dashboard/returns" },

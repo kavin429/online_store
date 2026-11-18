@@ -11,6 +11,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { PartyPopper } from "lucide-react";
 import type { LandingOffer } from "@/lib/offers";
+import type { FlashDeal } from "@/lib/flash-deals";
 import  FestivalSection  from "./offer-dialog";
 import FeaturesStrip from "./features-strip";
 import FlashDeals from "./flash-deals";
@@ -63,7 +64,17 @@ const slides = [
   },
 ];
 
-export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] }) {
+export default function HomeBanner({
+  offers = [],
+  flashDeals = [],
+  flashEndsAt,
+  flashViewAllHref,
+}: {
+  offers?: LandingOffer[];
+  flashDeals?: FlashDeal[];
+  flashEndsAt?: string | null;
+  flashViewAllHref?: string;
+}) {
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
@@ -185,7 +196,11 @@ export default function HomeBanner({ offers = [] }: { offers?: LandingOffer[] })
 
         <CategoriesSliderPage />
 
-        <FlashDeals/>
+        <FlashDeals
+          deals={flashDeals}
+          endsAt={flashEndsAt ?? undefined}
+          viewAllHref={flashViewAllHref}
+        />
 
         <div className="mt-10">
           <ProductCard />

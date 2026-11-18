@@ -21,8 +21,10 @@ export async function GET(
     const product = await prisma.product.findUnique({
       where: { id },
       include: {
-        category: true,
-        subcategory: true,
+        // Category/subcategory images are binary; only the fields used by the
+        // edit and detail screens are needed here.
+        category: { select: { id: true, name: true } },
+        subcategory: { select: { id: true, name: true } },
         images: true,
         variants: {
           include: {
@@ -116,8 +118,13 @@ export async function PATCH(
     const name = formData.get("name") as string;
     const description = formData.get("description") as string;
     const categoryId = Number(formData.get("categoryId"));
-    const subcategoryIdRaw = formData.get("subcategoryId") as string;
-    const subcategoryId = subcategoryIdRaw ? Number(subcategoryIdRaw) : null;
+    const subcategoryIdRaw = formData.get("subcategoryId");
+    const subcategoryId =
+      subcategoryIdRaw === null
+        ? undefined
+        : String(subcategoryIdRaw).trim() !== ""
+          ? Number(subcategoryIdRaw)
+          : null;
     const featured = formData.get("featured") === "true";
     const costPrice = parseFloat((formData.get("costPrice") as string) || "0");
     const sellingPrice = parseFloat((formData.get("sellingPrice") as string) || "0");
@@ -128,6 +135,57 @@ export async function PATCH(
     const options: Record<string, OptionEntry[]> = JSON.parse(
       (formData.get("options") as string) || "{}",
     );
+
+    // Which variant types are still selected in Step 1. When provided, options
+    // belonging to an unchecked type are ignored so removing a variant type
+    // actually removes it from the saved product.
+    let selectedVariantTypeIds: number[] | null = null;
+    const variantTypeIdsRaw = formData.get("variantTypeIds");
+    if (typeof variantTypeIdsRaw === "string" && variantTypeIdsRaw.trim() !== "") {
+      try {
+        const parsed = JSON.parse(variantTypeIdsRaw);
+        if (Array.isArray(parsed)) {
+          selectedVariantTypeIds = parsed
+            .map((value) => Number(value))
+            .filter((value) => Number.isFinite(value));
+        }
+      } catch {
+        // Ignore malformed payloads and keep the previous behaviour.
+      }
+    }
+
+    let filteredOptions: Record<string, OptionEntry[]> = options;
+    if (selectedVariantTypeIds) {
+      const selectedSlugs = selectedVariantTypeIds.length
+        ? new Set(
+            (
+              await prisma.variantType.findMany({
+                where: { id: { in: selectedVariantTypeIds } },
+                select: { slug: true },
+              })
+            ).map((type) => type.slug),
+          )
+        : new Set<string>();
+
+      filteredOptions = Object.fromEntries(
+        Object.entries(options).filter(([slug]) => selectedSlugs.has(slug)),
+      );
+    }
+
+    const removedImageIdsRaw = formData.get("removedImageIds");
+    let removedImageIds: number[] = [];
+    if (typeof removedImageIdsRaw === "string" && removedImageIdsRaw.trim() !== "") {
+      try {
+        const parsed = JSON.parse(removedImageIdsRaw);
+        if (Array.isArray(parsed)) {
+          removedImageIds = parsed
+            .map((value) => Number(value))
+            .filter((value) => Number.isInteger(value) && value > 0);
+        }
+      } catch {
+        // Ignore malformed payloads.
+      }
+    }
 
     const imageFiles = formData.getAll("images") as File[];
     const newImageBuffers = await Promise.all(
@@ -140,25 +198,34 @@ export async function PATCH(
       optionImageMap.set(file.name, Buffer.from(await file.arrayBuffer()));
     }
 
-    const activeTypeKeys = Object.keys(options).filter(
-      (key) => Array.isArray(options[key]) && options[key].length > 0,
+    const activeTypeKeys = Object.keys(filteredOptions).filter(
+      (key) =>
+        Array.isArray(filteredOptions[key]) && filteredOptions[key].length > 0,
     );
 
     await prisma.$transaction(async (tx) => {
-      // Update core product fields
+      // Update core product fields. subcategoryId is passed as-is so clearing
+      // the subcategory (null) is persisted too.
       await tx.product.update({
         where: { id },
         data: {
           name,
           description,
           categoryId,
-          subcategoryId: subcategoryId ?? undefined,
+          ...(subcategoryId !== undefined ? { subcategoryId } : {}),
           featured,
           costPrice,
           sellingPrice,
           discountPercent,
         },
       });
+
+      // Delete product images the user removed in the edit form
+      if (removedImageIds.length > 0) {
+        await tx.productImage.deleteMany({
+          where: { id: { in: removedImageIds }, productId: id },
+        });
+      }
 
       // Append any newly uploaded images (existing ones stay)
       if (newImageBuffers.length > 0) {
@@ -167,24 +234,72 @@ export async function PATCH(
         });
       }
 
-      // Rebuild variants: delete all existing, recreate from options
-      await tx.productVariant.deleteMany({ where: { productId: id } });
+      // Sync variants instead of deleting/recreating them, so variant IDs and
+      // their inventory batches/logs survive normal edits.
+      const existingVariants = await tx.productVariant.findMany({
+        where: { productId: id },
+        select: {
+          id: true,
+          priceOverride: true,
+          stock: true,
+          image: true,
+          values: { select: { variantValueId: true } },
+        },
+      });
 
+      const variantKey = (ids: number[]) =>
+        [...ids].sort((a, b) => a - b).join("-");
+
+      const existingByKey = new Map<
+        string,
+        (typeof existingVariants)[number]
+      >();
+      for (const variant of existingVariants) {
+        existingByKey.set(
+          variantKey(variant.values.map((v) => v.variantValueId)),
+          variant,
+        );
+      }
+
+      const matchedVariantIds = new Set<number>();
       let totalStock = 0;
 
       if (activeTypeKeys.length > 0) {
-        const valueArrays = activeTypeKeys.map((key) => options[key]);
+        const valueArrays = activeTypeKeys.map((key) => filteredOptions[key]);
         const combos = cartesian(valueArrays);
 
         for (const combo of combos) {
           const variantValueIds = combo.map((e) => e.variantValueId);
-          const priceOverride =
-            sellingPrice +
-            combo.reduce((sum, e) => sum + (Number(e.priceAdjustment) || 0), 0);
-          const comboStock = Math.min(...combo.map((e) => Number(e.stock) || 0));
-          totalStock += comboStock;
+          const key = variantKey(variantValueIds);
+          const existing = existingByKey.get(key);
 
-          const imageEntry = combo.find((e) => !!e.image || !!e.existingImageUrl);
+          // Price overrides are absolute values derived from the base price
+          // plus the current per-value adjustments. Recomputing them on every
+          // save keeps repeated edits stable and makes base-price edits stick.
+          const newPriceSum = combo.reduce(
+            (sum, e) => sum + (Number(e.priceAdjustment) || 0),
+            0,
+          );
+          const priceOverride = sellingPrice + newPriceSum;
+
+          const comboStock = Math.min(
+            ...combo.map((e) => Number(e.stock) || 0),
+          );
+          const initialComboStock = Math.min(
+            ...combo.map((e) => Number(e.initialStock) || 0),
+          );
+          const hasInitialStock = combo.every(
+            (e) => e.initialStock !== undefined && e.initialStock !== null,
+          );
+          const stock =
+            existing && hasInitialStock && comboStock === initialComboStock
+              ? existing.stock
+              : comboStock;
+          totalStock += stock;
+
+          const imageEntry = combo.find(
+            (e) => !!e.image || !!e.existingImageUrl,
+          );
 
           let imageBuffer: Buffer | null = null;
           if (imageEntry?.image) {
@@ -192,31 +307,58 @@ export async function PATCH(
             imageBuffer = optionImageMap.get(imageEntry.image) ?? null;
           } else if (imageEntry?.existingImageUrl) {
             // No new file — keep the existing image by decoding the data URL back to a buffer
-            const match = imageEntry.existingImageUrl.match(/^data:.+;base64,(.+)$/);
-            if (match) {
-              imageBuffer = Buffer.from(match[1], "base64");
-            }
+            const match = imageEntry.existingImageUrl.match(
+              /^data:.+;base64,(.+)$/,
+            );
+            imageBuffer = match
+              ? Buffer.from(match[1], "base64")
+              : existing?.image ?? null;
           }
 
-          await tx.productVariant.create({
-            data: {
-              sku: `P${id}-${variantValueIds.join("-")}-${Date.now()}`,
-              priceOverride,
-              stock: comboStock,
-              image: imageBuffer,
-              productId: id,
-              values: {
-                create: variantValueIds.map((variantValueId) => ({ variantValueId })),
+          if (existing) {
+            matchedVariantIds.add(existing.id);
+            await tx.productVariant.update({
+              where: { id: existing.id },
+              data: { priceOverride, stock, image: imageBuffer },
+            });
+          } else {
+            await tx.productVariant.create({
+              data: {
+                sku: `P${id}-${variantValueIds.join("-")}-${Date.now()}`,
+                priceOverride,
+                stock,
+                image: imageBuffer,
+                productId: id,
+                values: {
+                  create: variantValueIds.map((variantValueId) => ({
+                    variantValueId,
+                  })),
+                },
               },
-            },
-          });
+            });
+          }
         }
       }
 
-      await tx.product.update({
-        where: { id },
-        data: { stock: totalStock },
-      });
+      // Remove variants whose combination no longer exists
+      const variantIdsToDelete = existingVariants
+        .filter((variant) => !matchedVariantIds.has(variant.id))
+        .map((variant) => variant.id);
+
+      if (variantIdsToDelete.length > 0) {
+        await tx.productVariant.deleteMany({
+          where: { id: { in: variantIdsToDelete } },
+        });
+      }
+
+      // Update product stock only when variants were actually managed, or when
+      // every existing variant was removed. Products without variants keep
+      // their stock value.
+      if (activeTypeKeys.length > 0) {
+        await tx.product.update({ where: { id }, data: { stock: totalStock } });
+      } else if (existingVariants.length > 0) {
+        await tx.product.update({ where: { id }, data: { stock: 0 } });
+      }
     });
 
     return NextResponse.json({ success: true });

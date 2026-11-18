@@ -66,6 +66,7 @@ export async function PATCH(
     }
 
     let event: { title: string; message?: string; status: DeliveryStatus } | null = null;
+    let assignedDriverId: number | null = null;
 
     if (body.driverId !== undefined) {
       const driverId =
@@ -103,6 +104,7 @@ export async function PATCH(
         }
 
         data.driverId = driverId;
+        assignedDriverId = driverId;
         data.deliveryStatus = "ASSIGNED";
         data.assignedAt = new Date();
         data.pickedUpAt = null;
@@ -156,6 +158,20 @@ export async function PATCH(
             status: event.status,
             title: event.title,
             message: event.message ?? null,
+          },
+        });
+      }
+
+      if (assignedDriverId !== null) {
+        await tx.driverNotification.create({
+          data: {
+            driverId: assignedDriverId,
+            type: "DELIVERY_ASSIGNED",
+            title: "New delivery assigned",
+            message: `Order #${id} to ${order.fullName}${
+              order.city ? ` · ${order.city}` : ""
+            } has been assigned to you.`,
+            orderId: id,
           },
         });
       }

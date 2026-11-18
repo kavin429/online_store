@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { Bike, History, LayoutDashboard, LogOut, UserRound } from "lucide-react";
+import { Bell, Bike, History, LayoutDashboard, LogOut, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ModeToggle } from "@/components/misc/themeToggler";
+import DriverNotificationBell from "@/components/DriverNotificationBell";
 
 const NAV = [
   { href: "/dashboard", label: "Deliveries", icon: LayoutDashboard },
   { href: "/dashboard/history", label: "History", icon: History },
+  { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
   { href: "/dashboard/profile", label: "Profile", icon: UserRound },
 ];
 
@@ -54,6 +56,8 @@ export default function DriverTopBar({ name }: { name: string }) {
               );
             })}
           </div>
+
+          <DriverNotificationBell />
 
           <ModeToggle />
 

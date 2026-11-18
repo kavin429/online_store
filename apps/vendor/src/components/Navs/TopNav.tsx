@@ -10,6 +10,7 @@ import {
   DropdownMenuLabel,
 } from "@online-store/ui/dropdown-menu";
 import { ModeToggle } from "@/components/misc/themeToggler";
+import VendorNotificationBell from "@/components/VendorNotificationBell";
 
 interface Props {
   user: { name: string; };
@@ -74,6 +75,7 @@ const TopNav: NextPage<Props> = ({ user }) => {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        <VendorNotificationBell />
         <ModeToggle />
       </div>
     </nav>

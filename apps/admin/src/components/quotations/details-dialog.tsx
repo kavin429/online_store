@@ -21,6 +21,7 @@ import {
   formatMoney,
   quotationRef,
 } from "./column";
+import { QuotationProgress } from "./progress";
 
 type Props = {
   quotation: Quotation | null;
@@ -97,6 +98,11 @@ export default function QuotationDetailsDialog({
             Stock purchase request for {quotation.vendor?.name ?? "the vendor"}.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Progress</p>
+          <QuotationProgress status={quotation.status} />
+        </div>
 
         <div className="space-y-4 text-sm">
           <div className="grid gap-3 sm:grid-cols-2">

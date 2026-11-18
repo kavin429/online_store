@@ -2,6 +2,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@online-store/ui/button";
 import { Eye } from "lucide-react";
 import type { Quotation, QuotationStatus } from "@/lib/types";
+import { QuotationProgress } from "./progress";
 
 export type { Quotation, QuotationStatus };
 
@@ -115,6 +116,11 @@ export const columns = (onView: (quotation: Quotation) => void): ColumnDef<Quota
         </span>
       );
     },
+  },
+  {
+    id: "progress",
+    header: "Progress",
+    cell: ({ row }) => <QuotationProgress status={row.original.status} compact />,
   },
   {
     id: "pickup",

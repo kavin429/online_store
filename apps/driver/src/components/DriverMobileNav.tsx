@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { History, LayoutDashboard, UserRound } from "lucide-react";
+import { Bell, History, LayoutDashboard, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -18,6 +18,12 @@ const NAV_ITEMS = [
     label: "History",
     icon: History,
     isActive: (pathname: string) => pathname.startsWith("/dashboard/history"),
+  },
+  {
+    href: "/dashboard/notifications",
+    label: "Alerts",
+    icon: Bell,
+    isActive: (pathname: string) => pathname.startsWith("/dashboard/notifications"),
   },
   {
     href: "/dashboard/profile",

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,8 @@ export default function EditProductDialog({ productId, onSaved, open: controlled
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [removedImageIds, setRemovedImageIds] = useState<number[]>([]);
+  const existingImageIdsRef = useRef<Map<string, number>>(new Map());
   const [tab, setTab] = useState("details");
 
   const form = useForm<ProductFormValues>({
@@ -85,13 +87,70 @@ export default function EditProductDialog({ productId, onSaved, open: controlled
                 variantValueId: attr.id,
                 name: attr.name,
                 hexCode: attr.hexCode ?? null,
-                priceAdjustment: variant.priceOverride
-                  ? variant.priceOverride - (product.sellingPrice ?? 0)
-                  : 0,
-                stock: variant.stock ?? 0,
+                priceAdjustment: 0,
+                initialPriceAdjustment: 0,
+                stock: 0,
+                initialStock: 0,
                 image: null,
                 existingImageUrl: variant.image ?? null,
               });
+            }
+          }
+        }
+
+        // Variant prices are stored as absolute overrides, while the form edits
+        // per-value adjustments on top of the base price. Rebuild those
+        // adjustments from the saved combinations so a save neither inflates
+        // prices nor ignores a base-price change.
+        const optionSlugs = Object.keys(optionsMap).filter((slug) => optionsMap[slug].length > 0);
+        const basePrice = product.sellingPrice ?? 0;
+        const findVariant = (selection: Record<string, number>) =>
+          (product.variants ?? []).find((variant: any) =>
+            optionSlugs.every(
+              (slug) => variant.attributes?.[slug]?.id === selection[slug],
+            ),
+          ) as any;
+
+        if (optionSlugs.length > 0) {
+          const baseline: Record<string, number> = {};
+          for (const slug of optionSlugs) baseline[slug] = optionsMap[slug][0].variantValueId;
+
+          const baselineVariant = findVariant(baseline);
+          const baselineAdjustment =
+            baselineVariant?.priceOverride != null
+              ? baselineVariant.priceOverride - basePrice
+              : 0;
+
+          // The all-baseline combination's delta lives on one value only;
+          // assigning it to every type would add it multiple times on save.
+          const primarySlug = optionSlugs[0];
+          for (const slug of optionSlugs) {
+            optionsMap[slug].forEach((entry: any, index: number) => {
+              if (slug === primarySlug && index === 0) {
+                entry.priceAdjustment = baselineAdjustment;
+              } else if (index === 0) {
+                entry.priceAdjustment = 0;
+              } else {
+                const variant = findVariant({ ...baseline, [slug]: entry.variantValueId });
+                entry.priceAdjustment =
+                  variant?.priceOverride != null
+                    ? variant.priceOverride - basePrice - baselineAdjustment
+                    : 0;
+              }
+              entry.initialPriceAdjustment = entry.priceAdjustment;
+            });
+          }
+
+          // Combo stock is the minimum of its values' stock. Use the highest
+          // stock seen for a value so the displayed numbers can reproduce the
+          // saved combinations without silently dropping edits.
+          for (const slug of optionSlugs) {
+            for (const entry of optionsMap[slug]) {
+              const stocks = (product.variants ?? [])
+                .filter((variant: any) => variant.attributes?.[slug]?.id === entry.variantValueId)
+                .map((variant: any) => variant.stock ?? 0);
+              entry.stock = stocks.length > 0 ? Math.max(...stocks) : 0;
+              entry.initialStock = entry.stock;
             }
           }
         }
@@ -103,6 +162,12 @@ export default function EditProductDialog({ productId, onSaved, open: controlled
             if (attr.variantTypeId) variantTypeIdsSet.add(Number(attr.variantTypeId));
           }
         }
+
+        // Keep a URL -> image id map so removals can be persisted server-side.
+        existingImageIdsRef.current = new Map(
+          (product.images ?? []).map((img: { id: number; url: string }) => [img.url, img.id]),
+        );
+        setRemovedImageIds([]);
 
         form.reset({
           name: product.name ?? "",
@@ -135,6 +200,12 @@ export default function EditProductDialog({ productId, onSaved, open: controlled
     };
   }, [open, productId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleImageRemoved = (src: string) => {
+    const id = existingImageIdsRef.current.get(src);
+    if (id == null) return;
+    setRemovedImageIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  };
+
   const handleSubmit = form.handleSubmit(
     async (values) => {
       setSubmitting(true);
@@ -146,6 +217,7 @@ export default function EditProductDialog({ productId, onSaved, open: controlled
         formData.append("subcategoryId", values.subcategoryId);
         formData.append("featured", String(values.featured));
         formData.append("optionTypes", JSON.stringify(values.optionTypes));
+        formData.append("variantTypeIds", JSON.stringify(values.variantTypeIds ?? []));
         formData.append("costPrice", values.costPrice);
         formData.append("sellingPrice", values.sellingPrice);
         if (values.discountPercent) formData.append("discountPercent", values.discountPercent);
@@ -168,6 +240,9 @@ export default function EditProductDialog({ productId, onSaved, open: controlled
           )
         );
         formData.append("options", JSON.stringify(cleanOptions));
+        if (removedImageIds.length > 0) {
+          formData.append("removedImageIds", JSON.stringify(removedImageIds));
+        }
 
         // Only append newly-added product images (Files); existing ones stay untouched server-side
         const images = values.images;
@@ -231,7 +306,7 @@ export default function EditProductDialog({ productId, onSaved, open: controlled
               </TabsList>
 
               <TabsContent value="details" className="mt-4">
-                <Step1 form={form} previews={previews} setPreviews={setPreviews} />
+                <Step1 form={form} previews={previews} setPreviews={setPreviews} onImageRemoved={handleImageRemoved} />
               </TabsContent>
               <TabsContent value="options" className="mt-4">
                 <Step2 form={form} />

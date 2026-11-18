@@ -49,7 +49,7 @@ export default function ContactPage() {
         <div className="relative flex flex-col justify-between p-10 md:p-16 bg-gradient-to-br from-fuchsia-50 via-white to-fuchsia-50 dark:from-zinc-950 dark:via-black dark:to-zinc-950">
           <div className="absolute top-10 right-10 w-16 h-16 rounded-2xl bg-fuchsia-200/60 dark:bg-fuchsia-900/30 rotate-12" />
 
-          <div className="relative z-10 max-w-lg">
+          <div className="relative z-10 max-w-lg mt-5 sm:mt-0">
             <h1 className="font-display md:text-6xl font-bold leading-[1.05] mb-4">
               Contact
               <span className="text-fuchsia-500"> Me.</span>

@@ -37,6 +37,12 @@ const legalLinks = [
   { icon: <Accessibility size={11} />, label: "Accessibility" },
 ];
 
+const contactItems = [
+  { icon: <Phone size={12} />, text: "+91 1800 000 000", href: "tel:+911800000000" },
+  { icon: <Mail size={12} />, text: "hello@growmore.in", href: "mailto:hello@growmore.in" },
+  { icon: <MapPin size={12} />, text: "Bengaluru, Karnataka 560001", href: "#" },
+];
+
 /* ─────────────────────────────────────────
    ANIMATION HOOK
 ───────────────────────────────────────── */
@@ -64,6 +70,7 @@ function LinkColumn({ title, links, delay = 0 }: { title: string; links: string[
   return (
     <div
       ref={ref}
+      className="min-w-0"
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(22px)",
@@ -123,13 +130,31 @@ export default function GrowMoreFooter() {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        footer .gm-footer-grid {
+          display: grid !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          column-gap: 20px;
+          row-gap: 36px;
+        }
+        footer .gm-footer-brand { grid-column: 1 / -1 !important; }
+        @media (min-width: 640px) {
+          footer .gm-footer-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            column-gap: 32px;
+          }
+          footer .gm-footer-brand { grid-column: 1 / -1 !important; }
+        }
+        @media (min-width: 1024px) {
+          footer .gm-footer-grid { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; column-gap: 40px; }
+          footer .gm-footer-brand { grid-column: auto !important; }
+        }
         .gm-leaf-icon { animation: leafFloat 5s ease-in-out infinite; display: inline-block; }
         .gm-pulse     { animation: subtlePulse 2.5s ease-in-out infinite; }
       `}</style>
 
       {/* ── Trust Bar ── */}
-      <div className="bg-fuchsia-50 dark:bg-fuchsia-950 border-t border-fuchsia-100 dark:border-fuchsia-900 px-8 py-[14px]">
-        <div className="max-w-[1100px] mx-auto grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
+      <div className="bg-fuchsia-50 dark:bg-fuchsia-950 border-t border-fuchsia-100 dark:border-fuchsia-900 px-4 sm:px-8 py-[14px]">
+        <div className="max-w-[1100px] mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3">
           {trustItems.map(({ icon, label }, i) => (
             <div
               key={label}
@@ -171,15 +196,13 @@ export default function GrowMoreFooter() {
       <footer className="bg-white dark:bg-zinc-950 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1100px] mx-auto">
 
-          {/* Grid */}
-          <div
-            className="grid gap-8 sm:gap-10 pt-[10px] pb-10 sm:pb-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5"
-            style={{ gridTemplateColumns: undefined }}
-          >
+          {/* Grid: 2 cols below lg (brand spans both & centered), 5 cols on lg */}
+          <div className="gm-footer-grid pt-[10px] pb-10 sm:pb-12">
 
-            {/* ── Brand ── */}
+            {/* ── Brand (full width + centered below lg) ── */}
             <div
               ref={brandFade.ref}
+              className="gm-footer-brand flex flex-col items-center text-center lg:items-start lg:text-left"
               style={{
                 opacity: brandFade.visible ? 1 : 0,
                 transform: brandFade.visible ? "translateY(0)" : "translateY(24px)",
@@ -187,7 +210,7 @@ export default function GrowMoreFooter() {
               }}
             >
               {/* Logo */}
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex flex-col lg:flex-row items-center gap-3 mb-4">
                 <div className="w-11 h-11 rounded-[13px] bg-gradient-to-br from-fuchsia-700 to-[#1a3a2a] flex items-center justify-center relative shrink-0 shadow-[0_4px_16px_rgba(192,36,237,0.25)]">
                   <span className="gm-leaf-icon text-fuchsia-200">
                     <Leaf size={20} />
@@ -204,26 +227,23 @@ export default function GrowMoreFooter() {
                 </div>
               </div>
 
-              <p className="text-[13px] leading-[1.75] text-gray-400 dark:text-gray-500 max-w-[270px] mb-[18px]">
+              <p className="text-[13px] leading-[1.75] text-gray-400 dark:text-gray-500 max-w-[300px] lg:max-w-[270px] mb-[18px]">
                 Farm-fresh organic produce, groceries, and everyday essentials — grown with care, delivered with love.
               </p>
 
-              <div className="mb-5">
-                {[
-                  { icon: <Phone size={12} />, text: "+91 1800 000 000" },
-                  { icon: <Mail size={12} />, text: "hello@growmore.in" },
-                  { icon: <MapPin size={12} />, text: "Bengaluru, Karnataka 560001" },
-                ].map(({ icon, text }) => (
+              <div className="mb-5 flex flex-col items-center lg:items-start">
+                {contactItems.map(({ icon, text, href }) => (
                   <a
                     key={text}
-                    className="flex items-center gap-2 text-[12.5px] text-gray-400 dark:text-gray-500 cursor-pointer transition-colors duration-[180ms] hover:text-fuchsia-500 dark:hover:text-fuchsia-400 mb-2 no-underline"
+                    href={href}
+                    className="flex items-center justify-center lg:justify-start gap-2 text-[12.5px] text-gray-400 dark:text-gray-500 cursor-pointer transition-colors duration-[180ms] hover:text-fuchsia-500 dark:hover:text-fuchsia-400 mb-2 no-underline"
                   >
                     {icon} {text}
                   </a>
                 ))}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex justify-center lg:justify-start gap-2">
                 {socialIcons.map(({ icon, label }) => (
                   <button
                     key={label}
@@ -236,7 +256,7 @@ export default function GrowMoreFooter() {
               </div>
             </div>
 
-            {/* ── Columns ── */}
+            {/* ── Columns (2×2 on small: Shop | Help / Company | Stay Updated) ── */}
             <LinkColumn title="Shop" links={shopLinks} delay={60} />
             <LinkColumn title="Help" links={helpLinks} delay={120} />
             <LinkColumn title="Company" links={companyLinks} delay={180} />
@@ -244,6 +264,7 @@ export default function GrowMoreFooter() {
             {/* ── Newsletter ── */}
             <div
               ref={newsletterFade.ref}
+              className="min-w-0"
               style={{
                 opacity: newsletterFade.visible ? 1 : 0,
                 transform: newsletterFade.visible ? "translateY(0)" : "translateY(22px)",
@@ -274,7 +295,7 @@ export default function GrowMoreFooter() {
                   <Button
                     onClick={subscribe}
                     variant="shoe"
-                    className="w-full py-[10px] rounded-[10px]  text-[13px] font-semibold border-none flex items-center justify-center gap-[7px] cursor-pointer transition-all duration-200 hover:scale-[1.02]"
+                    className="w-full py-[10px] rounded-[10px] text-[13px] font-semibold border-none flex items-center justify-center gap-[7px] cursor-pointer transition-all duration-200 hover:scale-[1.02]"
                   >
                     <Send size={12} /> Subscribe
                   </Button>
@@ -300,7 +321,7 @@ export default function GrowMoreFooter() {
               <div className="w-[38px] h-[38px] rounded-[10px] shrink-0 bg-fuchsia-100 dark:bg-fuchsia-900 flex items-center justify-center text-fuchsia-500 dark:text-fuchsia-400">
                 <ShoppingCart size={17} />
               </div>
-              <div>
+              <div className="text-left">
                 <p className="text-[13px] font-semibold text-gray-800 dark:text-gray-100 m-0">
                   Shop smarter on the app
                 </p>
@@ -359,8 +380,6 @@ export default function GrowMoreFooter() {
 
         </div>
       </footer>
-
-
     </>
   );
 }
