@@ -11,10 +11,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>
+      <body className="antialiased">
         <Providers>
           {children}
-          <Toaster position="bottom-center" />
+          <Toaster position="top-center" richColors closeButton />
         </Providers>
       </body>
     </html>

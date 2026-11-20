@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
   try {
     const since = parseSince(req.nextUrl.searchParams.get("since"));
 
-    const [customers, quotationEvents, customerUnread, quotationUnread] =
+    const [customers, adminNotifications, customerUnread, adminNotifUnread] =
       await Promise.all([
         prisma.user.findMany({
           orderBy: { createdAt: "desc" },
@@ -42,26 +42,15 @@ export async function GET(req: NextRequest) {
             createdAt: true,
           },
         }),
-        prisma.quotationEvent.findMany({
-          where: { actor: "VENDOR" },
+        prisma.adminNotification.findMany({
           orderBy: { createdAt: "desc" },
           take: 30,
-          include: {
-            quotation: {
-              select: {
-                id: true,
-                vendor: { select: { id: true, name: true } },
-              },
-            },
-          },
         }),
         since
           ? prisma.user.count({ where: { createdAt: { gt: since } } })
           : Promise.resolve(0),
         since
-          ? prisma.quotationEvent.count({
-              where: { actor: "VENDOR", createdAt: { gt: since } },
-            })
+          ? prisma.adminNotification.count({ where: { createdAt: { gt: since } } })
           : Promise.resolve(0),
       ]);
 
@@ -79,20 +68,15 @@ export async function GET(req: NextRequest) {
           read: since ? customer.createdAt <= since : true,
         };
       }),
-      ...quotationEvents.map((event) => {
-        const vendorName = event.quotation.vendor?.name ?? "A vendor";
-        return {
-          id: `quotation-${event.id}`,
-          type: "QUOTATION" as const,
-          title: event.title,
-          message: event.message
-            ? `${vendorName}: ${event.message}`
-            : `${vendorName} updated a quotation.`,
-          href: `/dashboard/quotations?open=${event.quotation.id}`,
-          createdAt: event.createdAt.toISOString(),
-          read: since ? event.createdAt <= since : true,
-        };
-      }),
+      ...adminNotifications.map((n) => ({
+        id: `admin-notif-${n.id}`,
+        type: "QUOTATION" as const,
+        title: n.title,
+        message: n.message,
+        href: n.href,
+        createdAt: n.createdAt.toISOString(),
+        read: since ? n.createdAt <= since : true,
+      })),
     ].sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -100,7 +84,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       data: items,
-      unreadCount: customerUnread + quotationUnread,
+      unreadCount: customerUnread + adminNotifUnread,
       serverTime: new Date().toISOString(),
     });
   } catch (error) {

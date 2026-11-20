@@ -4,6 +4,7 @@ import {
   getRecentCustomers,
   type NewCustomerEvent,
 } from "@/lib/customerWatcher";
+import { addQuotationListener } from "@/lib/quotationWatcher";
 
 import { isAdmin } from "@/lib/auth";
 export const dynamic = "force-dynamic";
@@ -33,9 +34,17 @@ export async function GET(request: NextRequest) {
       send("connected", { ok: true, recent });
       controller.enqueue(encoder.encode(": connected\n\n"));
 
-      const unsubscribe = addCustomerListener((customer) => {
+      const unsubscribeCustomer = addCustomerListener((customer) => {
         try {
           send("new_customer", customer);
+        } catch (error) {
+          console.error("SSE send error:", error);
+        }
+      });
+
+      const unsubscribeQuotation = addQuotationListener((event) => {
+        try {
+          send("new_quotation", event);
         } catch (error) {
           console.error("SSE send error:", error);
         }
@@ -51,7 +60,8 @@ export async function GET(request: NextRequest) {
 
       cleanup = () => {
         clearInterval(ping);
-        unsubscribe();
+        unsubscribeCustomer();
+        unsubscribeQuotation();
         try {
           controller.close();
         } catch {

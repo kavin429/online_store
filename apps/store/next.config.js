@@ -1,7 +1,9 @@
-const { loadRootEnv } = require("@online-store/config/next");
+const { loadRootEnv, loadDbEnv } = require("@online-store/config/next");
 
 // Pull the shared monorepo-root .env into this app's process env.
 loadRootEnv(__dirname);
+// Prisma's DATABASE_URL lives next to the schema; share it with this app.
+loadDbEnv();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

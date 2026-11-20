@@ -1,6 +1,7 @@
-const { loadRootEnv } = require("@online-store/config/next");
+const { loadRootEnv, loadDbEnv } = require("@online-store/config/next");
 
 loadRootEnv(__dirname);
+loadDbEnv();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

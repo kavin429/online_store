@@ -1,20 +1,8 @@
-const fs = require("fs");
-const path = require("path");
-const { loadRootEnv, parseEnv } = require("@online-store/config/next");
+const { loadRootEnv, loadDbEnv } = require("@online-store/config/next");
 
 loadRootEnv(__dirname);
-
-// The monorepo keeps DATABASE_URL next to the Prisma schema. Reuse it when the
-// root .env does not define one so the driver app can boot on its own.
-if (!process.env.DATABASE_URL) {
-  const dbEnvPath = path.resolve(__dirname, "../../packages/db/.env");
-  if (fs.existsSync(dbEnvPath)) {
-    const parsed = parseEnv(fs.readFileSync(dbEnvPath, "utf8"));
-    for (const [key, value] of Object.entries(parsed)) {
-      if (process.env[key] === undefined) process.env[key] = value;
-    }
-  }
-}
+// Prisma's DATABASE_URL lives next to the schema; share it with this app.
+loadDbEnv();
 
 // The driver app runs on its own port. NextAuth needs the app's own URL so the
 // sign-in callback and cookies belong to this app, not the storefront.

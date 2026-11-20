@@ -12,6 +12,7 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
+    cookieName: "online-store.store.session-token",
   });
 
   if (!token || token.role !== ROLES.CUSTOMER) {

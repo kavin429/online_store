@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@online-store/ui/button";
+import { Card } from "@online-store/ui/card";
 import { Input } from "@online-store/ui/input";
 import { Label } from "@online-store/ui/label";
 import { toast } from "sonner";
+import { CarFront, IdCard, LockKeyhole, Phone } from "lucide-react";
 import AvailabilityToggle from "./AvailabilityToggle";
 
 type DriverProfileData = {
@@ -71,44 +73,55 @@ export default function DriverProfile({ driver }: { driver: DriverProfileData })
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">{driver.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            @{driver.username} · {driver.email || "No email added"}
-          </p>
+      <Card className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border-fuchsia-100/70 p-5 dark:border-fuchsia-900/30">
+        <div className="flex items-center gap-4">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 to-fuchsia-700 text-lg font-bold text-white shadow-md shadow-fuchsia-200 dark:shadow-fuchsia-900/40">
+            {driver.name.charAt(0).toUpperCase()}
+          </span>
+          <div>
+            <p className="text-lg font-semibold">{driver.name}</p>
+            <p className="text-sm text-muted-foreground">
+              @{driver.username} · {driver.email || "No email added"}
+            </p>
+          </div>
         </div>
         <AvailabilityToggle available={driver.isAvailable && driver.status === "ACTIVE"} />
-      </div>
+      </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border p-4 text-sm">
-          <p className="mb-2 font-semibold">Rider details</p>
-          <dl className="space-y-1.5">
+      <div className="grid items-start gap-5 lg:grid-cols-2">
+        <Card className="space-y-4 rounded-2xl border-fuchsia-100/70 p-5 dark:border-fuchsia-900/30">
+          <p className="flex items-center gap-2 font-semibold">
+            <CarFront className="h-4 w-4 text-fuchsia-600" /> Rider details
+          </p>
+          <dl className="space-y-2 text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Vehicle</dt>
-              <dd>{driver.vehicleType || "—"}</dd>
+              <dd className="text-right font-medium">{driver.vehicleType || "—"}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Plate number</dt>
-              <dd>{driver.vehicleNumber || "—"}</dd>
+              <dd className="text-right font-medium">{driver.vehicleNumber || "—"}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Licence</dt>
-              <dd>{driver.licenseNumber || "—"}</dd>
+              <dd className="text-right font-medium">{driver.licenseNumber || "—"}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Account</dt>
-              <dd>{driver.status === "ACTIVE" ? "Active" : "Blocked"}</dd>
+              <dd className="text-right font-medium">
+                {driver.status === "ACTIVE" ? "Active" : "Blocked"}
+              </dd>
             </div>
           </dl>
-          <p className="mt-3 text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Vehicle and account details are managed by the admin.
           </p>
-        </div>
+        </Card>
 
-        <form onSubmit={savePhone} className="space-y-3 rounded-xl border p-4">
-          <p className="font-semibold">Contact</p>
+        <form onSubmit={savePhone} className="space-y-4 rounded-2xl border border-fuchsia-100/70 bg-card p-5 dark:border-fuchsia-900/30">
+          <p className="flex items-center gap-2 font-semibold">
+            <Phone className="h-4 w-4 text-fuchsia-600" /> Contact
+          </p>
           <div className="space-y-1.5">
             <Label htmlFor="profile-phone">Phone number</Label>
             <Input
@@ -124,10 +137,15 @@ export default function DriverProfile({ driver }: { driver: DriverProfileData })
         </form>
       </div>
 
-      <form onSubmit={changePassword} className="space-y-3 rounded-xl border p-4">
+      <form
+        onSubmit={changePassword}
+        className="space-y-4 rounded-2xl border border-fuchsia-100/70 bg-card p-5 dark:border-fuchsia-900/30"
+      >
         <div>
-          <p className="font-semibold">Change password</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="flex items-center gap-2 font-semibold">
+            <LockKeyhole className="h-4 w-4 text-fuchsia-600" /> Change password
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
             Use a password you can remember. The admin can also reset it.
           </p>
         </div>
@@ -158,6 +176,10 @@ export default function DriverProfile({ driver }: { driver: DriverProfileData })
           {savingPassword ? "Saving..." : "Update password"}
         </Button>
       </form>
+
+      <p className="flex items-center gap-2 text-xs text-muted-foreground">
+        <IdCard className="h-4 w-4" /> Keep your details up to date so customers can reach you.
+      </p>
     </div>
   );
 }

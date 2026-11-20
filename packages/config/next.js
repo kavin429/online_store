@@ -49,4 +49,22 @@ function loadRootEnv(appDir) {
   return parsed;
 }
 
-module.exports = { loadRootEnv, parseEnv };
+/**
+ * Next.js only auto-loads env files next to each app, while Prisma CLI reads
+ * packages/db/.env. Load that same file for every app so DATABASE_URL (and the
+ * other shared DB settings) cannot silently go missing when an app is started
+ * on its own. Values already set by the shell, root .env or app-local .env win.
+ */
+function loadDbEnv() {
+  const envPath = path.resolve(__dirname, "../db/.env");
+  if (!fs.existsSync(envPath)) return {};
+
+  const parsed = parseEnv(fs.readFileSync(envPath, "utf8"));
+  for (const [key, value] of Object.entries(parsed)) {
+    if (process.env[key] === undefined) process.env[key] = value;
+  }
+
+  return parsed;
+}
+
+module.exports = { loadRootEnv, loadDbEnv, parseEnv };

@@ -19,6 +19,12 @@ export interface AuthOptionsInput {
   usePrismaAdapter?: boolean;
   /** Session lifetime in seconds. Defaults to 24h. */
   maxAge?: number;
+  /**
+   * Unique app key used to namespace auth cookies (e.g. "admin", "driver").
+   * Prevents sessions from different apps on the same host from overwriting
+   * each other.
+   */
+  app: "store" | "vendor" | "admin" | "driver";
 }
 
 const VENDOR_AUTO_ACTIVATE_HOURS = 24;
@@ -238,6 +244,13 @@ export function buildAuthOptions(input: AuthOptionsInput): NextAuthOptions {
     );
   }
 
+  const cookieOptions = {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    path: "/",
+    secure: process.env.NEXTAUTH_URL?.startsWith("https://") ?? false,
+  };
+
   return {
     adapter: input.usePrismaAdapter
       ? withUniqueUserName(PrismaAdapter(prisma) as unknown as Adapter)
@@ -251,6 +264,29 @@ export function buildAuthOptions(input: AuthOptionsInput): NextAuthOptions {
     pages: {
       signIn: input.signInPage,
       error: input.signInPage,
+    },
+
+    cookies: {
+      sessionToken: {
+        name: `online-store.${input.app}.session-token`,
+        options: cookieOptions,
+      },
+      callbackUrl: {
+        name: `online-store.${input.app}.callback-url`,
+        options: cookieOptions,
+      },
+      csrfToken: {
+        name: `online-store.${input.app}.csrf-token`,
+        options: { ...cookieOptions, httpOnly: false },
+      },
+      pkceCodeVerifier: {
+        name: `online-store.${input.app}.pkce.code_verifier`,
+        options: cookieOptions,
+      },
+      state: {
+        name: `online-store.${input.app}.state`,
+        options: cookieOptions,
+      },
     },
 
     providers,
@@ -278,6 +314,7 @@ export function buildAuthOptions(input: AuthOptionsInput): NextAuthOptions {
 
 /** The store app: customers (and Google sign-in). */
 export const storeAuthOptions: NextAuthOptions = buildAuthOptions({
+  app: "store",
   roles: [ROLES.CUSTOMER],
   signInPage: "/login",
   google: true,
@@ -286,18 +323,21 @@ export const storeAuthOptions: NextAuthOptions = buildAuthOptions({
 
 /** The vendor app: vendors only. */
 export const vendorAuthOptions: NextAuthOptions = buildAuthOptions({
+  app: "vendor",
   roles: [ROLES.VENDOR],
   signInPage: "/login",
 });
 
 /** The admin app: admins only. */
 export const adminAuthOptions: NextAuthOptions = buildAuthOptions({
+  app: "admin",
   roles: [ROLES.ADMIN],
   signInPage: "/login",
 });
 
 /** The driver app: delivery riders only. */
 export const driverAuthOptions: NextAuthOptions = buildAuthOptions({
+  app: "driver",
   roles: [ROLES.DRIVER],
   signInPage: "/login",
 });

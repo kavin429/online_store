@@ -152,7 +152,7 @@ export async function PATCH(
           });
         }
 
-        return tx.quotation.update({
+        const result = await tx.quotation.update({
           where: { id },
           data: {
             status: "QUOTED",
@@ -169,6 +169,17 @@ export async function PATCH(
           },
           include: INCLUDE,
         });
+
+        await tx.adminNotification.create({
+          data: {
+            type: "QUOTATION",
+            title: `${quotation.vendor.name} submitted a quotation`,
+            message: `${quotationRef(id)} — total ${formatQuotationMoney(quotedTotal)}. Review and accept or reject.`,
+            href: `/dashboard/quotations?open=${id}`,
+          },
+        });
+
+        return result;
       });
 
       const to = await adminRecipients();
@@ -228,6 +239,15 @@ export async function PATCH(
             vendorId,
             type: "QUOTATION",
             message: `${quotationRef(id)} was rejected.`,
+          },
+        });
+
+        await tx.adminNotification.create({
+          data: {
+            type: "QUOTATION",
+            title: `${quotation.vendor.name} rejected the quotation`,
+            message: `${quotationRef(id)} was rejected by the vendor. Reason: ${reason}`,
+            href: `/dashboard/quotations?open=${id}`,
           },
         });
 
@@ -311,6 +331,15 @@ export async function PATCH(
             message: `${quotationRef(id)} is ready for pickup on ${formatQuotationDate(
               pickupDate,
             )}.`,
+          },
+        });
+
+        await tx.adminNotification.create({
+          data: {
+            type: "QUOTATION",
+            title: `${quotation.vendor.name} set a pickup date`,
+            message: `${quotationRef(id)} is ready for pickup on ${formatQuotationDate(pickupDate)}. Assign a driver.`,
+            href: `/dashboard/quotations?open=${id}`,
           },
         });
 

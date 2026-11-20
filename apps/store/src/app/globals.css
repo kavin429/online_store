@@ -170,17 +170,6 @@ body {
   clip-path: polygon(25% 0%, 100% 0%, 100% 100%, 0% 100%);
 }
 
-@media (max-width: 900px) {
-          footer > div > div:first-child {
-            grid-template-columns: 1fr 1fr !important;
-          }
-        }
-        @media (max-width: 540px) {
-          footer > div > div:first-child {
-            grid-template-columns: 1fr !important;
-          }
-        }
-
 @layer utilities {
   .scrollbar-hide {
     -ms-overflow-style: none;

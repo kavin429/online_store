@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, Suspense, useRef } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@online-store/ui/card";
 import ProductCard from "@/components/Home/product";
@@ -46,20 +47,23 @@ const slides = [
     description:
       "Shop the latest collections with quality products, great prices, and fast delivery — all in one place.",
     button: "Explore Our Collection",
+    href: "/collection",
     image: "/banner1.png",
   },
   {
     title: "Upgrade Your Style with Trending Fashion",
     description:
       "Find premium fashion, accessories, and everyday essentials for modern living.",
-    button: "Shop Fashion",
+    button: "Shop Products",
+    href: "/products",
     image: "/banner2.png",
   },
   {
-    title: "Modern Electronics for Smart Living",
+    title: "Don't Miss Today's Best Offers",
     description:
-      "Browse the newest gadgets, smart devices, and tech products at unbeatable prices.",
-    button: "View Electronics",
+      "Browse the newest deals, featured picks, and limited-time offers at great prices.",
+    button: "View Offers",
+    href: "/offers",
     image: "/shoe1.png",
   },
 ];
@@ -114,8 +118,8 @@ export default function HomeBanner({
                   {slides[current].description}
                 </p>
 
-                <Button variant="shoe" className="self-center sm:self-start">
-                  {slides[current].button}
+                <Button asChild variant="shoe" className="self-center sm:self-start">
+                  <Link href={slides[current].href}>{slides[current].button}</Link>
                 </Button>
               </div>
 

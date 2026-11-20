@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { currentDriver } from "@/lib/auth";
 import DriverProfile from "@/components/DriverProfile";
+import PageHeader from "@/components/PageHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -26,5 +27,14 @@ export default async function DriverProfilePage() {
 
   if (!driver) redirect("/login");
 
-  return <DriverProfile driver={driver} />;
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Account"
+        title="My profile"
+        description="Manage your contact details, password and availability."
+      />
+      <DriverProfile driver={driver} />
+    </div>
+  );
 }

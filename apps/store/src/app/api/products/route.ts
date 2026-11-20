@@ -5,9 +5,11 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const page = Number(searchParams.get("page") || 1);
-    const limit = Number(searchParams.get("limit") || 10);
+    const page = Math.max(1, Number(searchParams.get("page") || 1));
+    const limit = Math.min(48, Math.max(1, Number(searchParams.get("limit") || 12)));
     const skip = (page - 1) * limit;
+
+    const q = (searchParams.get("q") || searchParams.get("search") || "").trim();
 
     const categoryId = Number(
       searchParams.get("categoryId") || searchParams.get("category") || 0
@@ -16,6 +18,16 @@ export async function GET(req: NextRequest) {
     const vendorId = Number(
       searchParams.get("vendorId") || searchParams.get("storeId") || 0
     );
+
+    const sort = searchParams.get("sort") || "newest";
+    const orderBy =
+      sort === "price_asc"
+        ? { sellingPrice: "asc" as const }
+        : sort === "price_desc"
+          ? { sellingPrice: "desc" as const }
+          : sort === "name_asc"
+            ? { name: "asc" as const }
+            : { createdAt: "desc" as const };
 
     // Products with no stock anywhere stay hidden from the storefront until
     // they are restocked (product-level or variant-level stock).
@@ -26,9 +38,22 @@ export async function GET(req: NextRequest) {
       ],
     };
 
+    const searchFilter = q
+      ? {
+          OR: [
+            { name: { contains: q } },
+            { description: { contains: q } },
+            { category: { name: { contains: q } } },
+            { vendor: { name: { contains: q } } },
+            { vendor: { vendorSettings: { is: { storeName: { contains: q } } } } },
+          ],
+        }
+      : null;
+
     const where = {
       AND: [
         inStockOnly,
+        ...(searchFilter ? [searchFilter] : []),
         ...(Number.isFinite(categoryId) && categoryId > 0
           ? [{ categoryId }]
           : []),
@@ -41,9 +66,7 @@ export async function GET(req: NextRequest) {
       skip,
       take: limit,
 
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy,
 
       include: {
         category: true,

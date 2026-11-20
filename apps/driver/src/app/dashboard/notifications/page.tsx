@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Bell, CheckCheck, Inbox, RefreshCw } from "lucide-react";
-
 import { Button } from "@online-store/ui/button";
+import { Card } from "@online-store/ui/card";
+import PageHeader from "@/components/PageHeader";
 import { cn } from "@/lib/utils";
 
 const READ_EVENT = "driver-notifications-read";
@@ -23,6 +24,7 @@ type Filter = "all" | "unread";
 
 function notificationLabel(type: string) {
   if (type === "DELIVERY_ASSIGNED") return "New delivery";
+  if (type.includes("PICKUP")) return "Stock pickup";
   return "Notification";
 }
 
@@ -103,25 +105,24 @@ export default function DriverNotificationsPage() {
   );
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Notifications</h1>
-          <p className="text-xs text-muted-foreground">
-            New deliveries assigned to you will appear here.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={() => void load()} disabled={loading}>
-            <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
-            Refresh
-          </Button>
-          <Button onClick={markAllRead} disabled={saving || unreadCount === 0}>
-            <CheckCheck className="mr-2 h-4 w-4" />
-            Mark all read
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Stay in the loop"
+        title="Notifications"
+        description="New deliveries and pickup updates assigned to you will appear here."
+        actions={
+          <>
+            <Button variant="outline" onClick={() => void load()} disabled={loading}>
+              <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
+              Refresh
+            </Button>
+            <Button onClick={markAllRead} disabled={saving || unreadCount === 0}>
+              <CheckCheck className="mr-2 h-4 w-4" />
+              Mark all read
+            </Button>
+          </>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <Button
@@ -141,62 +142,66 @@ export default function DriverNotificationsPage() {
       </div>
 
       {error && (
-        <p className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-300">
+        <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           {error}
         </p>
       )}
 
-      <div className="overflow-hidden rounded-lg border bg-background">
-        {loading && items.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
-            Loading notifications…
+      {loading && items.length === 0 ? (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Card key={index} className="h-24 animate-pulse bg-muted/40" />
+          ))}
+        </div>
+      ) : visible.length === 0 ? (
+        <Card className="rounded-2xl border-fuchsia-100/70 p-10 text-center dark:border-fuchsia-900/30">
+          <span className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-950/50 dark:text-fuchsia-300">
+            <Inbox className="h-7 w-7" />
+          </span>
+          <p className="font-semibold">Nothing here yet</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {filter === "unread"
+              ? "You are all caught up."
+              : "New delivery assignments will appear here."}
           </p>
-        ) : visible.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 px-4 py-12 text-center">
-            <Inbox className="h-8 w-8 text-muted-foreground" />
-            <p className="text-sm font-medium">Nothing here yet</p>
-            <p className="text-xs text-muted-foreground">
-              {filter === "unread"
-                ? "You are all caught up."
-                : "New delivery assignments will appear here."}
-            </p>
-          </div>
-        ) : (
-          visible.map((item) => (
-            <Link
-              key={item.id}
-              href={notificationHref(item)}
-              onClick={() => void markRead(item.id)}
-              className={cn(
-                "flex gap-3 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-muted/50",
-                !item.read && "bg-fuchsia-50/60 dark:bg-fuchsia-950/20",
-              )}
-            >
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/50 dark:text-fuchsia-300">
-                <Bell className="h-4 w-4" />
-              </span>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-medium">{notificationLabel(item.type)}</p>
-                  {!item.read && (
-                    <span className="rounded-full bg-fuchsia-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                      New
-                    </span>
-                  )}
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {visible.map((item) => (
+            <Link key={item.id} href={notificationHref(item)} onClick={() => void markRead(item.id)}>
+              <Card
+                className={cn(
+                  "flex gap-3 rounded-2xl border-fuchsia-100/70 p-4 transition hover:border-fuchsia-300 hover:shadow-sm dark:border-fuchsia-900/30",
+                  !item.read && "border-fuchsia-200 bg-fuchsia-50/60 dark:border-fuchsia-900/60 dark:bg-fuchsia-950/20",
+                )}
+              >
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/50 dark:text-fuchsia-300">
+                  <Bell className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-fuchsia-700 dark:text-fuchsia-400">
+                      {notificationLabel(item.type)}
+                    </p>
+                    {!item.read && (
+                      <span className="rounded-full bg-fuchsia-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                        New
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 break-words text-sm font-semibold">{item.title}</p>
+                  <p className="mt-0.5 break-words text-sm text-muted-foreground">
+                    {item.message}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    {new Date(item.createdAt).toLocaleString()}
+                  </p>
                 </div>
-                <p className="mt-0.5 break-words text-sm font-semibold">{item.title}</p>
-                <p className="mt-0.5 break-words text-sm text-muted-foreground">
-                  {item.message}
-                </p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  {new Date(item.createdAt).toLocaleString()}
-                </p>
-              </div>
+              </Card>
             </Link>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

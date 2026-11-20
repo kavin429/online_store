@@ -97,7 +97,7 @@ export default function LocationTracker({
   };
 
   return (
-    <div className="space-y-3 rounded-xl border border-fuchsia-100 p-4 dark:border-neutral-800">
+    <div className="space-y-3 rounded-2xl border border-fuchsia-100/70 p-5 dark:border-fuchsia-900/30">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="flex items-center gap-2 font-semibold">

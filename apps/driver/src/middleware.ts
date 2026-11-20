@@ -13,6 +13,11 @@ export default withAuth(
     callbacks: {
       authorized: ({ token }) => !!token,
     },
+    cookies: {
+      sessionToken: {
+        name: "online-store.driver.session-token",
+      },
+    },
   },
 );
 

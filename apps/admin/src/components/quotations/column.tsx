@@ -1,5 +1,6 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { Button } from "@online-store/ui/button";
+import { Badge } from "@online-store/ui/badge";
 import { Eye } from "lucide-react";
 import type { Quotation, QuotationStatus } from "@/lib/types";
 import { QuotationProgress } from "./progress";
@@ -109,11 +110,9 @@ export const columns = (onView: (quotation: Quotation) => void): ColumnDef<Quota
     cell: ({ row }) => {
       const status = row.original.status;
       return (
-        <span
-          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${QUOTATION_STATUS_TONES[status]}`}
-        >
+        <Badge className={QUOTATION_STATUS_TONES[status]}>
           {QUOTATION_STATUS_LABELS[status]}
-        </span>
+        </Badge>
       );
     },
   },

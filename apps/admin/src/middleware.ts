@@ -17,6 +17,11 @@ export default withAuth(
     callbacks: {
       authorized: ({ token }) => !!token,
     },
+    cookies: {
+      sessionToken: {
+        name: "online-store.admin.session-token",
+      },
+    },
   }
 );
 

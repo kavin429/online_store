@@ -10,6 +10,7 @@ import {
   PackageCheck,
   RotateCcw,
   Truck,
+  UserCheck,
   XCircle,
 } from "lucide-react";
 import { Badge } from "./badge";
@@ -123,6 +124,42 @@ const STATUS_CONFIG: Record<string, StatusConfig> = {
     label: "Unassigned",
     icon: Clock,
     className: "bg-gray-400 dark:bg-gray-600",
+  },
+  // ── Quotation statuses ──
+  requested: {
+    label: "Requested",
+    icon: Clock,
+    className: "bg-yellow-500 dark:bg-yellow-500/80",
+  },
+  quoted: {
+    label: "Quoted",
+    icon: Clock,
+    className: "bg-blue-500 dark:bg-blue-500/80",
+  },
+  accepted: {
+    label: "Accepted",
+    icon: CheckCircle2,
+    className: "bg-green-600 dark:bg-green-500/80",
+  },
+  ready_for_pickup: {
+    label: "Ready for pickup",
+    icon: Package,
+    className: "bg-orange-500 dark:bg-orange-500/80",
+  },
+  driver_assigned: {
+    label: "Driver assigned",
+    icon: UserCheck,
+    className: "bg-sky-600 dark:bg-sky-500/80",
+  },
+  received: {
+    label: "Received",
+    icon: PackageCheck,
+    className: "bg-green-700 dark:bg-green-600/80",
+  },
+  rejected: {
+    label: "Rejected",
+    icon: XCircle,
+    className: "bg-red-600 dark:bg-red-500/80",
   },
 };
 

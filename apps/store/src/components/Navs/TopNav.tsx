@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { useCart } from "@/context/addToCard";
 import { useWishlist } from "@/context/favorite";
@@ -480,12 +481,26 @@ type PanelKey = "cart" | "wishlist" | "profile" | "categories" | null;
 export default function ComplexNavbar() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [openPanel, setOpenPanel] = useState<PanelKey>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
   const { wishlist, removeFromWishlist } = useWishlist();
   const { cart } = useCart();
 
   const toggle = (key: PanelKey) =>
     setOpenPanel((prev) => (prev === key ? null : key));
   const closeAll = () => setOpenPanel(null);
+
+  const submitSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const q = searchQuery.trim();
+    setIsMobileNavOpen(false);
+    closeAll();
+    if (q) {
+      router.push(`/products?q=${encodeURIComponent(q)}`);
+    } else {
+      router.push("/products");
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -518,9 +533,11 @@ export default function ComplexNavbar() {
           </div>
 
           {/* SEARCH */}
-          <div className="hidden md:flex flex-1 relative">
+          <form onSubmit={submitSearch} className="hidden md:flex flex-1 relative">
             <Input
-              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search products, categories, stores..."
               className="
                 pr-10 rounded-full
                 border-fuchsia-200 dark:border-fuchsia-900
@@ -529,8 +546,14 @@ export default function ComplexNavbar() {
                 placeholder:text-gray-400
               "
             />
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          </div>
+            <button
+              type="submit"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400"
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          </form>
 
           {/* RIGHT — desktop */}
           <div className="hidden lg:flex items-center gap-3 ml-auto">
@@ -560,9 +583,11 @@ export default function ComplexNavbar() {
           <div className="p-3 sm:p-4 flex flex-col gap-3 sm:gap-4">
 
             {/* Search */}
-            <div className="relative">
+            <form onSubmit={submitSearch} className="relative">
               <Input
-                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search products, categories, stores..."
                 className="
             pr-10 rounded-full
             border-fuchsia-200 dark:border-fuchsia-900
@@ -570,8 +595,14 @@ export default function ComplexNavbar() {
             bg-fuchsia-50/40 dark:bg-fuchsia-950/20
           "
               />
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            </div>
+              <button
+                type="submit"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-fuchsia-600 dark:hover:text-fuchsia-400"
+                aria-label="Search"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            </form>
 
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <CategoryDropdown isOpen={openPanel === "categories"} onToggle={() => toggle("categories")} onClose={closeAll} />

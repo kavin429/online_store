@@ -66,7 +66,7 @@ export default function DeliveryActions({
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-fuchsia-100 p-4 dark:border-neutral-800">
+    <div className="space-y-3 rounded-2xl border border-fuchsia-100/70 bg-card p-5 dark:border-fuchsia-900/30">
       <div>
         <p className="font-semibold">Update delivery</p>
         <p className="text-xs text-muted-foreground">

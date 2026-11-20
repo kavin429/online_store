@@ -289,15 +289,11 @@ export default function QuotationDetailsDialog({
                   into inventory.
                 </p>
                 <Button
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        "Mark this order received? Stock quantities will be added back to inventory.",
-                      )
-                    ) {
-                      run("mark_received");
-                    }
-                  }}
+                  onClick={() =>
+                    toast("Mark this order received? Stock quantities will be added back to inventory.", {
+                      action: { label: "Confirm", onClick: () => run("mark_received") },
+                    })
+                  }
                   disabled={saving}
                 >
                   {saving ? "Saving…" : "Mark received & restore stock"}

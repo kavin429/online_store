@@ -729,6 +729,19 @@ model Notification {
   createdAt DateTime @default(now())
 }
 
+// ── Admin-facing notifications ──
+model AdminNotification {
+  id Int @id @default(autoincrement())
+
+  type    String // e.g. "QUOTATION", "CUSTOMER"
+  title   String
+  message String
+  href    String
+  read    Boolean @default(false)
+
+  createdAt DateTime @default(now())
+}
+
 // ── Driver-facing notifications (in-app inbox + live toast) ──
 model DriverNotification {
   id Int @id @default(autoincrement())

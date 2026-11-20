@@ -33,7 +33,9 @@ origin.
    Every step writes a `TrackingEvent`.
 5. While on a delivery the rider can press **Share live location**. The browser
    GPS position is posted every ~15 seconds to
-   `/api/deliveries/:id/location` and stored on the order + driver.
+   `/api/deliveries/:id/location` and stored on the order + driver. The delivery
+   page shows an embedded OpenStreetMap map that polls the saved position every
+   10 seconds, plus a **Directions** button that opens Google Maps navigation.
 6. The customer opens **My Orders → order** (`/account/orders/:id` in the store
    app) and sees the status timeline, rider details, and an embedded map that
    refreshes every 15 seconds.
@@ -44,9 +46,11 @@ origin.
 - Active delivery list with customer contact, address, items and COD amount
 - Call customer / open address in Google Maps
 - Pickup, out-for-delivery, delivered and failed delivery actions with notes
-- Live GPS sharing
-- Delivery history
-- In-app notification inbox with a bell badge and live toast when a new delivery is assigned
+- Live GPS sharing with an embedded map, live badge and one-tap directions on the delivery page
+- Stock pickup cards with vendor contact, map directions and pickup action
+- Delivery + pickup history with tabs, empty states and consistent status badges
+- In-app notification inbox with unread badge on desktop and mobile, and live toast when a new delivery is assigned
+- Loading skeletons, friendly error boundary and custom not-found page
 - Online/offline availability toggle, phone update and password change
 
 ## API routes
@@ -56,6 +60,7 @@ origin.
 | `GET` | `/api/deliveries?scope=history` | Assigned / completed orders |
 | `GET` | `/api/deliveries/:id` | One assigned order + timeline |
 | `PATCH` | `/api/deliveries/:id` | Update delivery status |
+| `GET` | `/api/deliveries/:id/location` | Latest saved GPS position (used by the live map) |
 | `POST` | `/api/deliveries/:id/location` | Store rider GPS position |
 | `GET/PATCH` | `/api/notifications` | Driver notification inbox / mark as read |
 | `GET` | `/api/notifications/stream` | SSE stream for live assignment toasts |

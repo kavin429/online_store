@@ -4,6 +4,41 @@ import { currentDriver } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+/** Read the latest saved position so the live map can refresh without a full reload. */
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const driver = await currentDriver();
+  if (!driver) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const id = Number(params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    return NextResponse.json({ error: "Invalid delivery id" }, { status: 400 });
+  }
+
+  const order = await prisma.order.findFirst({
+    where: { id, driverId: driver.id },
+    select: {
+      currentLat: true,
+      currentLng: true,
+      locationUpdatedAt: true,
+    },
+  });
+
+  if (!order) {
+    return NextResponse.json({ error: "Delivery not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    lat: order.currentLat,
+    lng: order.currentLng,
+    updatedAt: order.locationUpdatedAt,
+  });
+}
+
 /** The driver app posts its GPS position here while a delivery is open. */
 export async function POST(
   req: NextRequest,

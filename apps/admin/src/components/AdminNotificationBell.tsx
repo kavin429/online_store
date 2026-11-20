@@ -66,6 +66,25 @@ export default function AdminNotificationBell() {
       }
     });
 
+    source.addEventListener("new_quotation", (event) => {
+      try {
+        const data = JSON.parse((event as MessageEvent).data) as {
+          title?: string;
+          message?: string;
+          href?: string;
+        };
+        toast.info(data.title || "Quotation update", {
+          description: data.message,
+          action: data.href
+            ? { label: "View", onClick: () => router.push(data.href!) }
+            : undefined,
+        });
+        setUnreadCount((count) => count + 1);
+      } catch {
+        // ignore malformed payloads
+      }
+    });
+
     return () => source.close();
   }, []);
 

@@ -6,6 +6,7 @@ import { Bell } from "lucide-react";
 import { toast } from "sonner";
 
 const READ_EVENT = "driver-notifications-read";
+const CHANGED_EVENT = "driver-notifications-changed";
 
 type NewNotification = {
   id: number;
@@ -65,6 +66,7 @@ export default function DriverNotificationBell() {
             : undefined,
         });
         setUnreadCount((count) => count + 1);
+        window.dispatchEvent(new Event(CHANGED_EVENT));
         router.refresh();
       } catch {
         // ignore malformed payloads

@@ -196,7 +196,7 @@ export default function GrowMoreFooter() {
       <footer className="bg-white dark:bg-zinc-950 px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1100px] mx-auto">
 
-          {/* Grid: 2 cols below lg (brand spans both & centered), 5 cols on lg */}
+          {/* Grid: 2 cols below sm (brand spans both & centered), 4 cols at sm, 5 cols at lg */}
           <div className="gm-footer-grid pt-[10px] pb-10 sm:pb-12">
 
             {/* ── Brand (full width + centered below lg) ── */}

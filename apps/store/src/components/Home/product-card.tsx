@@ -139,22 +139,25 @@ export default function ProductCard({ product }: ProductCardProps) {
                     </p>
                   )}
                   <p className="mt-1 text-[11px] sm:text-xs text-zinc-400 dark:text-zinc-500 line-clamp-2 min-h-[1.75rem] sm:min-h-[2rem] w-full">
-                    {product.description ||
-                      "Lorem ipsum dolor sit amet, consectetur adipis."}
+                    {product.description || "View details for more information."}
                   </p>
 
-                  <div className="flex items-center gap-1 mt-2 sm:mt-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${
-                          i < Math.floor(product.rating || 0)
-                            ? "fill-amber-400 text-amber-400"
-                            : "fill-zinc-200 text-zinc-200 dark:fill-zinc-700 dark:text-zinc-700"
-                        }`}
-                      />
-                    ))}
-                  </div>
+                  {typeof product.rating === "number" && product.rating > 0 ? (
+                    <div className="flex items-center gap-1 mt-2 sm:mt-3">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`w-2.5 h-2.5 sm:w-3 sm:h-3 ${
+                            i < Math.floor(product.rating!)
+                              ? "fill-amber-400 text-amber-400"
+                              : "fill-zinc-200 text-zinc-200 dark:fill-zinc-700 dark:text-zinc-700"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-2 sm:mt-3 h-3 sm:h-3.5" aria-hidden="true" />
+                  )}
 
                   <div className="mt-1.5 sm:mt-2 flex items-baseline gap-1.5 sm:gap-2 flex-wrap justify-center">
                     <p className="text-lg sm:text-2xl font-bold text-zinc-900 dark:text-zinc-100">

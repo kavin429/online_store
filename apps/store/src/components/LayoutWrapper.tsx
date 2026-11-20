@@ -21,7 +21,7 @@ export default function LayoutWrapper({
     <>
       {!hideNavbar && <TopNav />}
 
-      <main className={!hideNavbar ? "mt-18 pb-20 lg:pb-0" : ""}>
+      <main className={!hideNavbar ? "pt-2 sm:pt-4 lg:pt-8 pb-20 lg:pb-0" : ""}>
         {children}
       </main>
 
