@@ -68,8 +68,28 @@ const emptyForm: PromoFormState = {
   status: "ACTIVE",
 };
 
-function toDateInputValue(value?: string | null) {
-  return value ? new Date(value).toISOString().slice(0, 10) : "";
+function toDateInputValue(value?: string | Date | null) {
+  if (!value) return "";
+  if (value instanceof Date) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+  // API dates are ISO strings; the first 10 characters are the calendar date.
+  return value.slice(0, 10);
+}
+
+function getTodayInputValue() {
+  return toDateInputValue(new Date());
+}
+
+function shiftDateInputValue(value: string, days: number) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return "";
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+  return toDateInputValue(date);
 }
 
 const toFormState = (promo: Promo): PromoFormState => ({
@@ -117,7 +137,7 @@ export const buildPromoPayload = (form: PromoFormState) => ({
 
 export type PromoPayload = ReturnType<typeof buildPromoPayload>;
 
-function validateForm(form: PromoFormState) {
+function validateForm(form: PromoFormState, mode: "create" | "edit" = "create") {
   const code = form.code.trim().toUpperCase();
   const discountValue = Number(form.discountValue);
 
@@ -152,10 +172,17 @@ function validateForm(form: PromoFormState) {
   if (!Number.isInteger(Number(form.usageLimitPerUser)) || Number(form.usageLimitPerUser) < 1) {
     return "Per-customer limit must be a positive whole number.";
   }
-  if (form.startsAt && form.expiresAt) {
-    const startsAt = new Date(`${form.startsAt}T00:00:00.000Z`).getTime();
-    const expiresAt = new Date(`${form.expiresAt}T00:00:00.000Z`).getTime();
-    if (expiresAt <= startsAt) return "Expiry date must be after the start date.";
+  if (mode === "create") {
+    const today = getTodayInputValue();
+    if (form.startsAt && form.startsAt < today) {
+      return "Start date cannot be in the past.";
+    }
+    if (form.expiresAt && form.expiresAt < today) {
+      return "Expiry date cannot be in the past.";
+    }
+  }
+  if (form.startsAt && form.expiresAt && form.expiresAt <= form.startsAt) {
+    return "Expiry date must be after the start date.";
   }
   return null;
 }
@@ -198,7 +225,7 @@ export default function PromoFormDialog({
   };
 
   const handleSubmit = async () => {
-    const validationError = validateForm(form);
+    const validationError = validateForm(form, mode);
     if (validationError) {
       setLocalError(validationError);
       return;
@@ -208,6 +235,15 @@ export default function PromoFormDialog({
   };
 
   const displayError = localError || error;
+  const today = getTodayInputValue();
+  const originalStart = promo?.startsAt ? toDateInputValue(promo.startsAt) : "";
+  // Keep an existing past start date editable, but new promos always start today or later.
+  const minStartDate =
+    mode === "edit" && originalStart && originalStart < today ? originalStart : today;
+  const minExpiryDate = form.startsAt ? shiftDateInputValue(form.startsAt, 1) : today;
+  const expiryBasedMaxStart = form.expiresAt ? shiftDateInputValue(form.expiresAt, -1) : "";
+  const maxStartDate =
+    expiryBasedMaxStart && expiryBasedMaxStart >= minStartDate ? expiryBasedMaxStart : undefined;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -384,6 +420,8 @@ export default function PromoFormDialog({
               <Label>Starts</Label>
               <Input
                 type="date"
+                min={minStartDate}
+                max={maxStartDate}
                 value={form.startsAt}
                 onChange={(event) => updateField("startsAt", event.target.value)}
               />
@@ -392,10 +430,14 @@ export default function PromoFormDialog({
               <Label>Expires</Label>
               <Input
                 type="date"
+                min={minExpiryDate}
                 value={form.expiresAt}
                 onChange={(event) => updateField("expiresAt", event.target.value)}
               />
             </div>
+            <p className="col-span-2 text-xs text-muted-foreground">
+              Start dates can&apos;t be in the past. Expiry must be after the start date.
+            </p>
           </div>
 
           <div className="space-y-1">
