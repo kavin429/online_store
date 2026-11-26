@@ -14,7 +14,7 @@ import { Button } from "@online-store/ui/button";
 ───────────────────────────────────────── */
 const trustItems = [
   { icon: <Leaf size={15} />, label: "100% Organic" },
-  { icon: <Truck size={15} />, label: "Free Shipping ₹499+" },
+  { icon: <Truck size={15} />, label: "Free Shipping LKR 499+" },
   { icon: <RotateCcw size={15} />, label: "Easy Returns" },
   { icon: <Lock size={15} />, label: "Secure Checkout" },
 ];

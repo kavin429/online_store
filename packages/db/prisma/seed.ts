@@ -11,6 +11,7 @@ async function main() {
     { name: "Weight", slug: "weight" },
     { name: "Volume", slug: "volume" },
     { name: "Waist", slug: "waist" },
+    { name: "Screen-Size", slug: "screenSize" },
   ];
 
   for (const type of variantTypes) {

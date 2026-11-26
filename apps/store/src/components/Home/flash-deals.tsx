@@ -7,6 +7,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/context/addToCard";
+import { formatLKR } from "@/lib/utils";
 import AuthRequiredDialog from "@/components/misc/authRequiredDialog";
 
 export type Deal = {
@@ -205,11 +206,11 @@ export default function FlashDeals({
 
                   <div className="mt-1 flex items-baseline gap-2">
                     <span className="text-lg font-black text-fuchsia-600 dark:text-fuchsia-400">
-                      ₹{deal.price.toLocaleString("en-IN")}
+                      {formatLKR(deal.price)}
                     </span>
                     {hasDiscount && (
                       <span className="text-xs text-zinc-400 line-through sm:text-sm">
-                        ₹{deal.originalPrice.toLocaleString("en-IN")}
+                        {formatLKR(deal.originalPrice)}
                       </span>
                     )}
                   </div>

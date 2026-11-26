@@ -81,7 +81,8 @@ export default function AddVariantValueDialog({
   const isColor = variantName === "color";
   const isWeight = variantName === "weight";
   const isVolume = variantName === "volume";
-  const isWeightOrVolume = isWeight || isVolume;
+  const isScreenSize = variantName === "screen-size";
+  const isWeightOrVolume = isWeight || isVolume || isScreenSize;
 
   const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
 
@@ -191,7 +192,7 @@ export default function AddVariantValueDialog({
                     <Input
                       {...field}
                       onChange={(e) => { field.onChange(e.target.value); setNameManuallyEdited(true); }}
-                      placeholder={isColor ? "e.g. Red" : isWeightOrVolume ? "e.g. 500" : "e.g. M"}
+                      placeholder={isColor ? "e.g. Red" : isScreenSize ? "e.g. 15.6" : isWeightOrVolume ? "e.g. 500" : "e.g. M"}
                     />
                   </FormControl>
                   <FormMessage />
@@ -207,7 +208,7 @@ export default function AddVariantValueDialog({
                   <FormItem>
                     <FormLabel>Unit</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder={isWeight ? "g / kg" : "ml / L"} />
+                      <Input {...field} placeholder={isWeight ? "g / kg" : isScreenSize ? "inch / cm" : "ml / L"} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
